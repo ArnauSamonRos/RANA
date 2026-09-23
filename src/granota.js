@@ -486,7 +486,8 @@ const POSES = {
   gulp:    { eyes: 'closed', puff: 0.35, sx: 1.03 },
 };
 
-function render(g, poseName, lookX = 0, lookY = 0) {
+// opts.noLegs: només el cos, el cap i la cara; opts.raw: afegeix les dades dels píxels (per a la vista 3D)
+function render(g, poseName, lookX = 0, lookY = 0, opts = {}) {
   const pose = POSES[poseName] || {};
   const sx = pose.sx || 1, sy = pose.sy || 1;
   const N = GW * GH;
@@ -590,7 +591,7 @@ function render(g, poseName, lookX = 0, lookY = 0) {
   const shoulderY = Math.max(mouthY + 3, bottom - Math.min(bodyH * (g.arms === 'long' ? 0.5 : 0.3), g.armLen));
 
   // --- Potes posteriors en salt (darrere del cos)
-  if (legs === 'jump' || legs === 'spread') {
+  if (!opts.noLegs && (legs === 'jump' || legs === 'spread')) {
     const hipX = bodyW * 0.6, r = g.thighs === 'bulky' ? 2.1 : g.thighs === 'slim' ? 1.4 : 1.7;
     const footX = legs === 'jump' ? hipX + g.legLen * 0.45 : hipX + g.legLen * 0.8;
     const footY = legs === 'jump' ? G - 1 : G - 1 - g.legLen * 0.2;
@@ -608,7 +609,12 @@ function render(g, poseName, lookX = 0, lookY = 0) {
     if ((u > 0.62 && v > -0.35) || (v > 0.78 && Math.abs(u) > 0.35) || (u > 0.45 && v > 0.55)) lvl[k] = -1;
     else if (u < -0.3 && u > -0.8 && v < -0.25 && v > -0.9) lvl[k] = 1;
   }
+  // opts.raw (vista 3D): nivell d'ombra de volum i color de pell de cada píxel, per
+  // poder refer la llum en girar la granota sense perdre taques ni berrugues
+  const vol = opts.raw ? new Int8Array(N) : null, volCol = opts.raw ? new Array(N).fill(null) : null;
+  if (vol) for (let k = 0; k < N; k++) if (bodyIn[k]) vol[k] = lvl[k];
   applyPatterns(g, col, lvl, bodyIn, U, V, eyeY, cy, bodyH, idx, 'body');
+  if (vol) for (let k = 0; k < N; k++) if (bodyIn[k]) volCol[k] = col[k];
 
   // --- Panxa
   if (g.bellyType !== 'none' && g.belly !== g.body) {
@@ -644,6 +650,7 @@ function render(g, poseName, lookX = 0, lookY = 0) {
         else if (w < 0.35 && t < 0.35) lvl[k] = 1;
       }
     }
+    if (vol) for (let k = 0; k < N; k++) if (bIn[k]) { vol[k] = lvl[k]; volCol[k] = col[k]; }
     if (g.navel) {                                    // melic: línia i marca a la part baixa de la panxa
       const ny = Math.round(bottom - 4), nw = Math.round(bodyW * 0.3);
       for (let x = -nw; x < nw; x++) { const k = idx(CX + x, ny); if (bIn[k]) lvl[k] = -1; }
@@ -658,7 +665,7 @@ function render(g, poseName, lookX = 0, lookY = 0) {
   }
 
   // --- Cuixes i peus posteriors (asseguda / ajupida)
-  if (legs === 'sit' || legs === 'crouch') {
+  if (!opts.noLegs && (legs === 'sit' || legs === 'crouch')) {
     const k = legs === 'crouch' ? 1.2 : 1;
     if (g.thighs !== 'hidden') {
       const tcx = bodyW - g.tw * 0.55, tcy = G - 1 - g.th * 0.9;
@@ -672,7 +679,7 @@ function render(g, poseName, lookX = 0, lookY = 0) {
   }
 
   // --- Braços
-  if (g.arms !== 'hidden' || legs !== 'sit') {
+  if (!opts.noLegs && (g.arms !== 'hidden' || legs !== 'sit')) {
     // braços per dins de les cuixes i sense tocar-se entre ells
     const inner = g.thighs === 'hidden' ? bodyW * 0.75 : bodyW - g.tw * 1.2 - 1.5;
     const ax = Math.max(2.5, Math.min(bodyW * g.armX + 2.5, inner));
@@ -938,7 +945,8 @@ function render(g, poseName, lookX = 0, lookY = 0) {
     img.data[k * 4] = n >> 16 & 255; img.data[k * 4 + 1] = n >> 8 & 255; img.data[k * 4 + 2] = n & 255; img.data[k * 4 + 3] = 255;
   }
   cx.putImageData(img, 0, 0);
-  return { canvas: cv, mouth: { x: CX, y: mouthY + 1 }, bodyW, top, cx: CX, g: G };
+  const raw = opts.raw ? { col, lvl, vol, volCol, eyes, eyeY, er, mouthY, shoulderY, bottom, top, bodyW, bodyH } : undefined;
+  return { canvas: cv, mouth: { x: CX, y: mouthY + 1 }, bodyW, top, cx: CX, g: G, raw };
 }
 
 function applyPatterns(g, col, lvl, mask, U, V, eyeY, cy, bodyH, idx, part) {
@@ -1016,5 +1024,5 @@ function create(seed) {
   };
 }
 
-return { create, genome, features, VERSION, GW, GH, G, CX, POSES, util: { variant, shift, hexToHsl, hslToHex, hash2, noise2 } };
+return { create, genome, features, VERSION, GW, GH, G, CX, POSES, renderFront: (g, pose, opts) => render(g, pose, 0, 0, opts), util: { variant, shift, hexToHsl, hslToHex, hash2, noise2 } };
 })();

@@ -103,6 +103,20 @@ function newFrog(seed, entrance = true) {
   document.getElementById('seed').textContent = '#' + seed.toString(16).padStart(8, '0');
   resetParts();
   updateVoteUI();
+  warmViews(f);
+}
+
+// Prepara les vistes girades en els moments lliures (així girar no fa sotracs)
+function warmViews(f) {
+  const todo = [];
+  for (const pose of ['idle', 'crouch', 'takeoff', 'air', 'fall', 'breath', 'blink']) for (let y = 1; y < 8; y++) todo.push([pose, y]);
+  const idle = window.requestIdleCallback || (cb => setTimeout(() => cb({ timeRemaining: () => 8 }), 30));
+  const step = dl => {
+    if (!frog || frog.f !== f) return;                 // ja hi ha una altra granota
+    while (todo.length && dl.timeRemaining() > 6) { const [pose, y] = todo.shift(); f.frame(pose, 0, 0, y); }
+    if (todo.length) idle(step);
+  };
+  idle(step);
 }
 
 function mouthWorld() {

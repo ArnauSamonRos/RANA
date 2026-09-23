@@ -63,10 +63,23 @@ encara que el generador canviï.
   gola inflada, ajupida, enlairament, vol, caiguda, boca oberta, empassar), amb contorn i ombrejat
   automàtics, i fa servir la mirada (pupil·les) cap a on va o cap a la mosca.
 - `src/vista3d.js` — vistes des de qualsevol direcció (tres quarts, perfil, esquena, tres quarts
-  d'esquena). A partir del genoma es construeix un model 3D d'el·lipsoides (cos, cap, ulls, cuixes,
-  peus, braços, mans) amb els mateixos colors, ulls, panxa i patrons, i es dibuixa en píxels des de
-  8 direccions (passos de 45°) amb ombrejat de 3 tons i contorns exteriors i interiors. La vista de
-  cara continua sent el dibuix 2D. També hi ha les poses de salt vistes de perfil i d'esquena.
+  d'esquena), fetes a partir del dibuix de cara de la mateixa granota perquè es reconegui girada:
+  - el cos (sense potes) conserva fila a fila l'amplada del dibuix de cara i agafa gruix seguint el
+    perfil d'una granota asseguda (morro endavant a l'alçada de la boca, gola, pit i esquena que baixa
+    fins al cul);
+  - la part del davant es pinta amb els píxels exactes del dibuix (boca, panxa, taques, galtes) i
+    l'esquena amb els colors de pell de la mateixa alçada; la llum es refà en 3D sense perdre
+    berrugues ni clapes, i la boca continua pels costats del cap;
+  - els ulls són esferes amb la textura dels ulls del dibuix, girades una mica cap als costats (de
+    perfil es veu l'ull i la pupil·la); cuixes, peus amb dits, braços i banyes són peces 3D amb les
+    mides del genoma;
+  - als salts, el cos s'inclina i les potes del darrere són primes i llargues com al full de sprites:
+    a l'enlairament empenyen avall i enrere, a l'aire van estirades enrere i a la caiguda queden
+    amunt mentre els braços busquen terra; el peu és llarg i acaba en dits oberts.
+
+  Es dibuixa en píxels des de 8 direccions (passos de 45°) amb ombrejat de 3 tons i contorns
+  exteriors i interiors. La vista de cara continua sent el dibuix 2D. El model de cada pose es
+  guarda i les vistes girades es preparen en els moments lliures, perquè girar no faci sotracs.
 - `src/joc.js` — comportament: la granota es gira de 45° en 45° cap a on salta i, quan reposa, es
   torna a girar cap a tu; salts parabòlics amb ombra, sèries de salts, salts llargs, raucar,
   migdiades i caça de mosques amb la llengua. La durada, l'alçada i la llargada dels salts depenen
