@@ -124,20 +124,24 @@ const Aprenentatge = (() => {
   function pack(entries) {
     const keys = [], idx = new Map();
     const enc = f => f.map(k => { if (!idx.has(k)) { idx.set(k, keys.length); keys.push(k); } return idx.get(k); });
-    const list = entries.map(e => e.type === 'duel' ? { d: 1, w: enc(e.w), l: enc(e.l) }
-      : Object.assign({ v: e.v, f: enc(e.f) }, e.parts ? { p: e.parts } : {}));
+    const list = entries.map(e => Object.assign(e.type === 'duel' ? { d: 1, w: enc(e.w), l: enc(e.l) }
+      : Object.assign({ v: e.v, f: enc(e.f) }, e.parts ? { p: e.parts } : {}), e.id ? { id: e.id } : {}));
     return { keys, list };
   }
   function unpack(packed) {
     if (!packed || !packed.keys) return [];
     const dec = a => a.map(i => packed.keys[i]);
-    return packed.list.map(e => e.d ? { type: 'duel', w: dec(e.w), l: dec(e.l) }
-      : Object.assign({ v: e.v, f: dec(e.f) }, e.p ? { parts: e.p } : {}));
+    return packed.list.map(e => Object.assign(e.d ? { type: 'duel', w: dec(e.w), l: dec(e.l) }
+      : Object.assign({ v: e.v, f: dec(e.f) }, e.p ? { parts: e.p } : {}), e.id ? { id: e.id } : {}));
   }
+
+  // Identificador d'un vot (clau del navegador + moment): serveix per saber quins
+  // vots del navegador ja estan consolidats al model base i no comptar-los dos cops.
+  const voteId = (key, e) => key + '@' + (e.t || 0);
 
   const labelPair = (k, labelOf) => k.split('|').map(labelOf).join(' + ');
 
-  return { PARTS, partOf, pairKeys, examples, train, score, valid, pack, unpack, labelPair };
+  return { PARTS, partOf, pairKeys, examples, train, score, valid, pack, unpack, voteId, labelPair };
 })();
 
 if (typeof module !== 'undefined') module.exports = Aprenentatge;

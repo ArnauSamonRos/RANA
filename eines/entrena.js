@@ -29,7 +29,7 @@ for (const f of files) {
     if (!Aprenentatge.valid(e)) continue;
     const key = seed + '@' + (e.ver || 0);
     const cur = votes.get(key);
-    if (!cur || (e.t || 0) >= (cur.t || 0)) votes.set(key, e);
+    if (!cur || (e.t || 0) >= (cur.t || 0)) votes.set(key, Object.assign({}, e, { id: Aprenentatge.voteId(seed, e) }));
     n++;
   }
   Object.assign(labels, data.labels || {});
@@ -43,8 +43,8 @@ let L = 0, D = 0, P = 0, K = 0;
 for (const e of entries) {
   if (e.type === 'duel') K++; else if (e.v > 0) L++; else if (e.v < 0) D++; else P++;
 }
-const clean = entries.map(e => e.type === 'duel' ? { type: 'duel', w: e.w, l: e.l }
-  : Object.assign({ v: e.v, f: e.f }, e.parts ? { parts: e.parts } : {}));
+const clean = entries.map(e => Object.assign(e.type === 'duel' ? { type: 'duel', w: e.w, l: e.l }
+  : Object.assign({ v: e.v, f: e.f }, e.parts ? { parts: e.parts } : {}), { id: e.id }));
 const packed = Aprenentatge.pack(clean);
 const used = {};
 for (const k of packed.keys) if (labels[k]) used[k] = labels[k];

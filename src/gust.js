@@ -33,7 +33,18 @@ const Gust = (() => {
   try { store = JSON.parse(localStorage.getItem(KEY)) || store; } catch (e) { /* res */ }
   store.votes = store.votes || {}; store.labels = store.labels || {};
   migrateV1();
+  dropConsolidated();
   let model = null;
+
+  // Els vots que ja són al model base (consolidats al projecte) s'esborren del
+  // navegador: així no compten dues vegades i el comptador de vots nous torna a 0.
+  function dropConsolidated() {
+    const ids = new Set(BASE_ENTRIES.map(e => e.id).filter(Boolean));
+    if (!ids.size) return;
+    let n = 0;
+    for (const [k, e] of Object.entries(store.votes)) if (ids.has(Aprenentatge.voteId(k, e))) { delete store.votes[k]; n++; }
+    if (n) save();
+  }
 
   function migrateV1() {
     let old = null;

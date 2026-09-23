@@ -495,9 +495,9 @@ document.querySelectorAll('#duelbar button').forEach(b => b.addEventListener('cl
 function updateVoteUI() {
   if (!partsEl.children.length) return;
   const { L, D, P, K, local, base } = Gust.counts();
-  const n = L + D + P + K + base;
-  document.getElementById('learnBtn').textContent = n
-    ? `Après de ${n} valoracions — què he après?`
+  const nous = L + D + P + K;
+  document.getElementById('learnBtn').textContent = nous || base
+    ? `${nous} valoracions noves${base ? ` · model après amb ${base}` : ''} — què he après?`
     : 'Puntua d\'1 a 5 (o fes duels ⚔) i aprendré quines granotes t\'agraden';
   document.getElementById('baseInfo').textContent =
     `${base} valoracions consolidades al projecte + ${local} en aquest navegador ` +
