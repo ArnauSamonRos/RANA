@@ -377,10 +377,13 @@ function updateVoteUI() {
   const v = Gust.voteOf(frog.g.seed);
   document.getElementById('like').classList.toggle('on', v > 0);
   document.getElementById('dislike').classList.toggle('on', v < 0);
-  const { L, D } = Gust.counts();
+  const { L, D, local, base } = Gust.counts();
   document.getElementById('learnBtn').textContent = L + D
     ? `Après de ${L + D} vots (${L} 👍 · ${D} 👎) — què he après?`
     : 'Vota 👍 / 👎 i aprendré quines granotes t\'agraden';
+  document.getElementById('baseInfo').textContent =
+    `${base} vots consolidats al projecte + ${local} en aquest navegador. ` +
+    'Exporta els vots per incorporar-los al model base.';
   if (!document.getElementById('learnPanel').hidden) fillLearn();
 }
 function fillLearn() {
@@ -394,20 +397,26 @@ document.getElementById('dislike').addEventListener('click', dislike);
 document.getElementById('learnBtn').addEventListener('click', () => {
   const p = document.getElementById('learnPanel');
   p.hidden = !p.hidden;
-  if (!p.hidden) fillLearn();
+  updateVoteUI();
 });
 document.getElementById('forget').addEventListener('click', () => {
-  if (confirm('Esborrar tots els vots i començar a aprendre de zero?')) { Gust.reset(); updateVoteUI(); }
+  if (confirm("Esborrar els vots d'aquest navegador? (El model consolidat al projecte es manté.)")) { Gust.reset(); updateVoteUI(); }
 });
-
-document.getElementById('restart').addEventListener('click', restart);
-cv.addEventListener('pointerdown', e => spawnFly(e.clientX, e.clientY));
-addEventListener('keydown', e => {
-  if (e.key === 'r' || e.key === 'R') restart();
-  if (e.key === 'g' || e.key === 'G') toggleGallery();
-  if (!galleryOpen && (e.key === 'm' || e.key === 'M')) like();
-  if (!galleryOpen && (e.key === 'n' || e.key === 'N')) dislike();
-  if (e.key === 'Escape' && galleryOpen) toggleGallery();
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const blob = new Blob([Gust.exportJSON()], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `vots-granotes-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', async e => {
+  let n = 0;
+  try { for (const f of e.target.files) n += Gust.importJSON(await f.text()); alert(`Importats ${n} vots nous.`); }
+  catch (err) { alert('No s\'ha pogut importar: ' + err.message); }
+  e.target.value = '';
+  updateVoteUI();
 });
 
 // Galeria: mostra moltes granotes alhora; clic per adoptar-ne una

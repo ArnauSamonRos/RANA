@@ -7,6 +7,10 @@
 
 const Granota = (() => {
 
+// Versió del generador: s'apuja quan un mateix codi (llavor) passa a dibuixar
+// una granota diferent. Els vots guarden la versió i els trets per no perdre's.
+const VERSION = 4;
+
 // ---------------------------------------------------------------- RNG ----
 function mulberry32(a) {
   return function () {
@@ -788,5 +792,5 @@ function create(seed) {
   };
 }
 
-return { create, genome, features, GW, GH, G, CX, POSES };
+return { create, genome, features, VERSION, GW, GH, G, CX, POSES };
 })();

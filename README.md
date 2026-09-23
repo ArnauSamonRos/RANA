@@ -9,7 +9,19 @@ Obre `index.html` al navegador (no cal servidor).
 - **▦ Galeria** (tecla `G`): mostra 30 granotes aleatòries; clica'n una per adoptar-la.
 - **👍 / 👎** (botons grans a baix al centre, o tecles `M` / `N`): vota la granota i passa
   automàticament a la següent. També es pot votar des de la galeria.
-- **"Què he après?"** (a dalt a l'esquerra, sota el nom): mostra quins trets t'agraden i quins no, i permet oblidar-ho tot.
+- **"Què he après?"** (a dalt a l'esquerra, sota el nom): mostra quins trets t'agraden i quins no,
+  i permet **exportar** / **importar** els vots en un fitxer.
+
+## Enregistrar el gust de manera permanent
+
+1. Vota granotes (a la pàgina o a la galeria). Els vots es guarden al navegador.
+2. "Què he après?" → **⬇ Exporta els vots**: descarrega `vots-granotes-AAAA-MM-DD.json`.
+3. Posa el fitxer a `dades/` (o passa-me'l) i executa `node eines/entrena.js`.
+4. Això regenera `src/model.js`: el model base que carrega la pàgina. Des d'aleshores
+   la generació ja surt afinada per a tothom, en qualsevol navegador, i els vots nous s'hi sumen.
+
+Cada vot guarda els **trets** de la granota (no només el codi), així que continua sent vàlid
+encara que el generador canviï.
 - **Clic a la pantalla**: deixa anar una mosca.
 - La llavor de la granota queda a l'URL (`#xxxxxxxx`): compartint l'enllaç es veu la mateixa granota.
 
@@ -46,7 +58,8 @@ Obre `index.html` al navegador (no cal servidor).
   color, to, ulls, pupil·la, boca, panxa, potes, patrons, proporcions, mida...). Els vots donen a
   cada tret un pes (log-odds, tipus Naive Bayes). Per crear una granota nova es proven 60 llavors,
   es puntuen i se'n tria una amb probabilitat proporcional a `exp(puntuació / 1.5)`; un 15% de les
-  granotes surten totalment a l'atzar per continuar explorant. Els vots es guarden al navegador
-  (`localStorage`), així que cada navegador té el seu propi gust après.
+  granotes surten totalment a l'atzar per continuar explorant. Els comptes són la suma del model
+  base (`src/model.js`, generat per `eines/entrena.js` a partir de `dades/*.json`) i dels vots del
+  navegador (`localStorage`).
 
 `referencia/` conté les imatges originals que s'han fet servir com a referència.
