@@ -32,19 +32,24 @@ encara que el generador canviï.
 
 - `src/granota.js` — generador. Cada llavor de 32 bits produeix un genoma determinista.
   Primer tria un **arquetip** inspirat en la referència (arbre, dard, gripau, toro, pluja, banyuda,
-  bassa) que fixa proporcions, paletes i preferències de peces; cada peça pot venir d'un altre
+  bassa, cintura) que fixa proporcions, paletes i preferències de peces; cada peça pot venir d'un altre
   arquetip (20%). La disposició és sempre coherent: ulls dins el cap, boca sota els ulls,
   panxa i braços per sota de la boca, braços per dins de les cuixes.
   - **Cos**: amplada, alçada, forma del cap i del ventre (superel·lipse amb eixamplament inferior).
-  - **Ulls** (inspirats en la referència): sortints, als costats, sobre bonys, de gripau (parpella plana),
+  - **Ulls** (inspirats en la referència): sortints, als costats, sobre bonys, de gripau (parpella plana), tranquils (sòcol pàl·lid
+    amb línia de parpella), amb vora de color (ranura fosca), ovalats (negres i brillants),
     endormiscats (parpella pesada), blancs amb pupil·la, contents (tancats en arc, amb o sense sòcol),
     petits encastats o de punt. Pupil·la rodona, horitzontal, vertical, plena, brillant, en anella o de punt;
     iris de diversos colors; parpella del color del cos, clara, rosada o de contrast; celles planes o
     enfadades (inclinades); banyes opcionals.
-  - **Boca**: línia, somriure, trista, petita o sense (mai oberta); narius i galtes opcionals.
-  - **Panxa**: oval, gran, papada, estriada o sense.
+  - **Boca**: línia, somriure, trista, petita, de bigoti (diagonals cap avall), caiguda (ampla amb
+    les puntes avall) o sense (mai oberta); galtes clares sota els ulls opcionals; narius i galtes opcionals.
+  - **Panxa**: oval, gran, enorme (amb melic opcional), pitet (ampla a dalt i estreta a baix),
+    papada, estriada o sense.
+  - **Cos**: cintura estreta opcional (forma de rellotge de sorra).
   - **Potes**: braços prims, grossos, amb ventoses o amagats; cuixes grosses, normals, primes o amagades;
-    peus amb dits, ventoses o palmats.
+    peus amb dits, dits llargs, ventoses o palmats; braços llargs; mans i peus d'un
+    color de contrast.
   - **Patrons** (0–2 combinats): taques, berrugues, pigues, ratlla dorsal, línies laterals, bandes,
     clapes, jaspiat, antifaç, bicolor, ornaments i pigues fosques.
   - **Colors**: 24 paletes extretes de `referencia/granotes.gif`, amb variació de to suau,
