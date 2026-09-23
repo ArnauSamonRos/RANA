@@ -72,8 +72,9 @@ encara que el generador canviï.
   - parts marcades (cada part s'entrena només amb els seus trets),
   - duels (la guanyadora ha de puntuar més que la perdedora, model de Bradley-Terry).
 - `src/gust.js` — reentrena el model amb tots els vots després de cada valoració, prova 80 llavors per
-  granota nova i en tria una amb probabilitat proporcional a `exp(puntuació / 0.35)`; un 10% surten a
-  l'atzar per continuar explorant. Els duels es trien perquè les dues granotes puntuïn semblant però
+  granota nova i en tria una amb probabilitat proporcional a `exp(puntuació / T)`, penalitzant les que
+  s'assemblen a les últimes 8 vistes; una part surten totalment a l'atzar. El control **Varietat** del
+  panell "Què he après?" regula la barreja (per defecte, 35% a l'atzar i T = 0.9). Els duels es trien perquè les dues granotes puntuïn semblant però
   siguin diferents (així cada tria ensenya més). Els vots es guarden al navegador (`localStorage`) i
   es poden exportar i consolidar a `src/model.js` amb `eines/entrena.js`.
 

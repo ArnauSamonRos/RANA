@@ -17,8 +17,15 @@ const Gust = (() => {
   const KEY = 'granotes-gust-v2';
   const OLD_KEY = 'granotes-gust-v1';
   const CANDIDATES = 80;     // llavors provades per cada granota nova
-  const EXPLORE = 0.1;       // fracció de granotes totalment a l'atzar
-  const TEMP = 0.35;          // temperatura: més alta = més varietat
+  // Varietat (0..1, ajustable al panell): barreja granotes a l'atzar (com abans del
+  // model) amb granotes guiades pel gust, i com de estricte és el model triant.
+  const VKEY = 'granotes-varietat';
+  let variety = 0.5;
+  try { const v = parseFloat(localStorage.getItem(VKEY)); if (v >= 0 && v <= 1) variety = v; } catch (e) { /* res */ }
+  const explore = () => 0.1 + 0.5 * variety;          // 10%..60% a l'atzar (0.35 per defecte)
+  const temp = () => 0.3 + 1.2 * variety;             // més alta = més varietat
+  const RECENT = 8;                                    // granotes recents que no es volen repetir
+  const recent = [];
   const BASE = typeof GRANOTES_MODEL !== 'undefined' ? GRANOTES_MODEL : {};
   const BASE_ENTRIES = Aprenentatge.unpack(BASE.entries);
   const BASE_LABELS = BASE.labels || {};
@@ -82,20 +89,38 @@ const Gust = (() => {
 
   const score = g => Aprenentatge.score(model, Granota.features(g).map(x => x[0]));
 
+  // Semblança entre dues granotes (proporció de trets principals compartits)
+  const MAINP = /^(arch|col|bcol|eye|pup|mouth|belly|arms|thigh|pat|pal|bst):/;
+  const mainOf = seed => new Set(featKeys(seed).filter(k => MAINP.test(k)));
+  function similarity(a, b) {
+    let same = 0; for (const k of a) if (b.has(k)) same++;
+    return same / Math.max(1, Math.max(a.size, b.size));
+  }
+  function remember(seed) { recent.push(mainOf(seed)); if (recent.length > RECENT) recent.shift(); return seed; }
+
   function next() {
-    if (!model.total || Math.random() < EXPLORE) return randomSeed();
+    if (!model.total || Math.random() < explore()) return remember(randomSeed());
     const cands = [];
     for (let i = 0; i < CANDIDATES; i++) {
       const s = randomSeed();
       const e = store.votes[hex(s)];
       if (e && e.v < 0 && e.ver === Granota.VERSION) continue;
-      cands.push([s, score(Granota.genome(s))]);
+      // penalitza les que s'assemblen massa a les últimes que s'han vist
+      const m = mainOf(s);
+      const rep = recent.length ? Math.max(...recent.map(r => similarity(m, r))) : 0;
+      cands.push([s, score(Granota.genome(s)) - 3 * rep * rep]);
     }
     const mx = Math.max(...cands.map(c => c[1]));
-    const ws = cands.map(c => Math.exp((c[1] - mx) / TEMP));
+    const T = temp();
+    const ws = cands.map(c => Math.exp((c[1] - mx) / T));
     let r = Math.random() * ws.reduce((a, b) => a + b, 0);
-    for (let i = 0; i < cands.length; i++) { r -= ws[i]; if (r <= 0) return cands[i][0]; }
-    return cands[cands.length - 1][0];
+    for (let i = 0; i < cands.length; i++) { r -= ws[i]; if (r <= 0) return remember(cands[i][0]); }
+    return remember(cands[cands.length - 1][0]);
+  }
+
+  function setVariety(v) {
+    variety = Math.max(0, Math.min(1, v));
+    try { localStorage.setItem(VKEY, String(variety)); } catch (e) { /* res */ }
   }
 
   function voteOf(seed) {
@@ -191,7 +216,7 @@ const Gust = (() => {
 
   build(true);
   return {
-    next, vote, rate, duel, duelPair, score, insights, reset, voteOf, exportJSON, importJSON,
+    next, vote, rate, duel, duelPair, setVariety, variety: () => variety, score, insights, reset, voteOf, exportJSON, importJSON,
     counts: () => ({ L: model.L, D: model.D, P: model.P, K: model.K, local: Object.keys(store.votes).length, base: BASE_ENTRIES.length }),
   };
 })();

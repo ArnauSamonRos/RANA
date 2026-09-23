@@ -515,6 +515,9 @@ function fillLearn() {
   document.getElementById('learnBody').innerHTML =
     `<table>${rows}</table><h4>Combinacions</h4><div>${pairs.join('<br>') || '<span class="n">encara res clar</span>'}</div><br>`;
 }
+const varietyEl = document.getElementById('variety');
+varietyEl.value = Math.round(Gust.variety() * 100);
+varietyEl.addEventListener('input', () => Gust.setVariety(varietyEl.value / 100));
 document.getElementById('learnBtn').addEventListener('click', () => {
   const p = document.getElementById('learnPanel');
   p.hidden = !p.hidden;

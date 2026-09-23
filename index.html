@@ -63,6 +63,9 @@
   #learnBody h4 { margin: 8px 0 4px; font-size: 13px; }
   #learnPanel .actions { display: flex; gap: 16px; flex-wrap: wrap; }
   #learnPanel p { margin: 8px 0 0; opacity: .6; }
+  #varietyRow { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-weight: bold; }
+  #varietyRow span { font-weight: normal; opacity: .6; }
+  #variety { flex: 1; min-width: 100px; accent-color: #2a2230; }
   #gallery .cell { display: flex; flex-direction: column; align-items: stretch; }
   #gallery .cell .votes { display: flex; justify-content: center; gap: 6px; }
   #gallery .cell .votes button { font-size: 13px; padding: 2px 8px; border: 2px solid #2a2230; background: #fff; cursor: pointer; }
@@ -99,6 +102,8 @@
 <div id="learn">
   <button id="learnBtn" class="link"></button>
   <div id="learnPanel" hidden>
+    <label id="varietyRow">Varietat: <span>més al teu gust</span>
+      <input id="variety" type="range" min="0" max="100" step="5"> <span>més barreja</span></label>
     <div id="learnBody"></div>
     <div class="actions">
       <button id="exportBtn" class="link" title="Descarrega els teus vots en un fitxer">⬇ Exporta els vots</button>
