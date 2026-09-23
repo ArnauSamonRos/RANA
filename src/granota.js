@@ -938,7 +938,7 @@ function render(g, poseName, lookX = 0, lookY = 0) {
     img.data[k * 4] = n >> 16 & 255; img.data[k * 4 + 1] = n >> 8 & 255; img.data[k * 4 + 2] = n & 255; img.data[k * 4 + 3] = 255;
   }
   cx.putImageData(img, 0, 0);
-  return { canvas: cv, mouth: { x: CX, y: mouthY + 1 }, bodyW, top };
+  return { canvas: cv, mouth: { x: CX, y: mouthY + 1 }, bodyW, top, cx: CX, g: G };
 }
 
 function applyPatterns(g, col, lvl, mask, U, V, eyeY, cy, bodyH, idx, part) {
@@ -1002,14 +1002,19 @@ function create(seed) {
   const cache = new Map();
   return {
     g,
-    frame(pose, lx = 0, ly = 0) {
-      const key = pose + '|' + lx + '|' + ly;
+    // yaw: direcció cap on mira (0 = de cara, 1..7 = girs de 45°; vegeu src/vista3d.js).
+    // De cara es fa servir el dibuix 2D; la resta de direccions, el model 3D.
+    frame(pose, lx = 0, ly = 0, yaw = 0) {
+      const key = pose + '|' + lx + '|' + ly + '|' + yaw;
       let f = cache.get(key);
-      if (!f) { f = render(g, pose, lx, ly); cache.set(key, f); }
+      if (!f) {
+        f = yaw && typeof Granota3D !== 'undefined' ? Granota3D.render(g, pose, yaw) : render(g, pose, lx, ly);
+        cache.set(key, f);
+      }
       return f;
     },
   };
 }
 
-return { create, genome, features, VERSION, GW, GH, G, CX, POSES };
+return { create, genome, features, VERSION, GW, GH, G, CX, POSES, util: { variant, shift, hexToHsl, hslToHex, hash2, noise2 } };
 })();

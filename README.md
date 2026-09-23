@@ -62,7 +62,13 @@ encara que el generador canviï.
 - El renderitzador dibuixa cada pose a partir del genoma (repòs, respiració, parpelleig, mig adormida,
   gola inflada, ajupida, enlairament, vol, caiguda, boca oberta, empassar), amb contorn i ombrejat
   automàtics, i fa servir la mirada (pupil·les) cap a on va o cap a la mosca.
-- `src/joc.js` — comportament: salts parabòlics amb ombra, sèries de salts, salts llargs, raucar,
+- `src/vista3d.js` — vistes des de qualsevol direcció (tres quarts, perfil, esquena, tres quarts
+  d'esquena). A partir del genoma es construeix un model 3D d'el·lipsoides (cos, cap, ulls, cuixes,
+  peus, braços, mans) amb els mateixos colors, ulls, panxa i patrons, i es dibuixa en píxels des de
+  8 direccions (passos de 45°) amb ombrejat de 3 tons i contorns exteriors i interiors. La vista de
+  cara continua sent el dibuix 2D. També hi ha les poses de salt vistes de perfil i d'esquena.
+- `src/joc.js` — comportament: la granota es gira de 45° en 45° cap a on salta i, quan reposa, es
+  torna a girar cap a tu; salts parabòlics amb ombra, sèries de salts, salts llargs, raucar,
   migdiades i caça de mosques amb la llengua. La durada, l'alçada i la llargada dels salts depenen
   del pes i les potes de cada granota.
 

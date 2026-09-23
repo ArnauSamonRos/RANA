@@ -86,6 +86,7 @@ function newFrog(seed, entrance = true) {
   frog = {
     f, g, x: frog ? frog.x : (W + panelW() - partsBox().right) / 2, y: frog ? frog.y : H * 0.55,
     lift: 0, pose: 'idle', lx: 0, ly: 0, act: null, plan: [], tongue: null,
+    yaw: 0,                     // cap on mira: 0 = de cara, 2 = dreta, 4 = d'esquena, 6 = esquerra
     // Paràmetres de moviment derivats del cos
     hopDist: (16 + 16 * g.jumpy) * (1 - 0.3 * g.mass),
     hopHeight: (9 + 15 * g.jumpy) * (1 - 0.35 * g.mass),
@@ -105,8 +106,25 @@ function newFrog(seed, entrance = true) {
 }
 
 function mouthWorld() {
-  const m = frog.f.frame('idle').mouth;
-  return { x: frog.x + (m.x - CX) * S, y: frog.y - frog.lift + (m.y - G) * S };
+  const fr = frog.f.frame('idle', 0, 0, frog.yaw), m = fr.mouth;
+  return { x: frog.x + (m.x - fr.cx) * S, y: frog.y - frog.lift + (m.y - fr.g) * S };
+}
+
+// ---- Direcció: la granota es gira cap a on salta, de 45° en 45° -----------------------
+// Moure's cap avall a la pantalla és anar cap a la càmera (de cara).
+const yawOf = (dx, dy) => ((Math.round(Math.atan2(dx, dy) / (Math.PI / 4)) % 8) + 8) % 8;
+function yawStep(from, to) {                 // un pas de 45° pel camí més curt
+  const d = ((to - from + 12) % 8) - 4;
+  return d === 0 ? from : (from + Math.sign(d) + 8) % 8;
+}
+const TURN_STEP = 0.07;
+const turnSteps = (from, to) => Math.abs(((to - from + 12) % 8) - 4);
+function actTurnTo(target) {
+  return { run(t) {
+    frog.lift = 0; frog.pose = 'idle';
+    if (t >= (this.n || 0) * TURN_STEP) { if (frog.yaw === target) return true; frog.yaw = yawStep(frog.yaw, target); this.n = (this.n || 0) + 1; }
+    return false;
+  } };
 }
 function lookAt(tx, ty) {
   const dx = tx - frog.x, dy = ty - (frog.y - 20 * S);
@@ -168,7 +186,16 @@ function actHop(tx, ty, big) {
   const dx = tx - x0;
   frog.lx = Math.abs(dx) > 4 * S ? Math.sign(dx) : 0;
   frog.ly = ty < y0 - 6 * S ? -1 : 0;
-  return { run(t) {
+  const target = dist > 2 * S ? yawOf(dx, ty - y0) : frog.yaw;
+  const tt = turnSteps(frog.yaw, target) * TURN_STEP;   // primer es gira cap a on saltarà
+  return { run(t0) {
+    if (t0 < tt) {
+      frog.pose = 'idle'; frog.lift = 0;
+      if (t0 >= (this.n || 0) * TURN_STEP && frog.yaw !== target) { frog.yaw = yawStep(frog.yaw, target); this.n = (this.n || 0) + 1; }
+      return false;
+    }
+    frog.yaw = target;
+    const t = t0 - tt;
     if (t < c) { frog.pose = 'crouch'; frog.lift = 0; return false; }
     const u = (t - c) / air;
     if (u < 1) {
@@ -265,6 +292,10 @@ function think() {
   }
 
   // Sense mosques: passejar amb naturalitat, segons la personalitat
+  if (frog.yaw !== 0 && Math.random() < 0.55) {            // quan reposa, es gira cap a tu
+    frog.plan.push(actIdle(rand(0.8, 2) * g.lazy));
+    return actTurnTo(0);
+  }
   const r = Math.random();
   if (r < 0.34) return actIdle(rand(1, 3) * g.lazy);
   if (r < 0.34 + 0.12 * g.croaky) return actCroak();
@@ -316,15 +347,15 @@ function drawTongue(tg) {
 }
 
 function drawFrog() {
-  const fr = frog.f.frame(frog.pose, frog.lx, frog.ly);
+  const fr = frog.f.frame(frog.pose, frog.yaw ? 0 : frog.lx, frog.yaw ? 0 : frog.ly, frog.yaw);
   // sombra
   const k = 1 - clamp(frog.lift / (60 * S), 0, 0.6);
   ctx.fillStyle = 'rgba(0,0,0,0.10)';
   ctx.beginPath();
   ctx.ellipse(frog.x, frog.y + S, (fr.bodyW + 5) * S * k, 3 * S * k, 0, 0, Math.PI * 2);
   ctx.fill();
-  const x = Math.round(frog.x / S) * S - CX * S;
-  const y = Math.round((frog.y - frog.lift) / S) * S - G * S;
+  const x = Math.round(frog.x / S) * S - fr.cx * S;
+  const y = Math.round((frog.y - frog.lift) / S) * S - fr.g * S;
   ctx.drawImage(fr.canvas, x, y, fr.canvas.width * S, fr.canvas.height * S);
 }
 
