@@ -21,14 +21,16 @@ resize();
 const rand = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-const bounds = () => ({ x0: 32 * S, x1: W - 32 * S, y0: 64 * S, y1: H - Math.max(6 * S, 175) });
+// Amplada del panell de puntuació de l'esquerra (la granota no s'hi posa a sota)
+const panelW = () => (duelMode ? 0 : document.getElementById('rate').offsetWidth);
+const bounds = () => ({ x0: panelW() + 30 * S, x1: W - 32 * S, y0: 64 * S, y1: H - Math.max(6 * S, 90) });
 
 // ---- Mosques ---------------------------------------------------------------
 const flies = [];
 function spawnFly(x, y) {
   const m = 30 * S;
   const f = {
-    x: x ?? rand(m, W - m), y: y ?? rand(50 * S, H - m),
+    x: x ?? rand(panelW() + m, W - m), y: y ?? rand(50 * S, H - m),
     vx: 0, vy: 0, t: rand(0, 10), caught: false, dead: false,
   };
   f.hx = f.x; f.hy = f.y;
@@ -37,7 +39,7 @@ function spawnFly(x, y) {
 function updateFly(f, dt) {
   if (f.caught) return;
   f.t += dt;
-  f.hx = clamp(f.hx + Math.sin(f.t * 0.37) * 18 * S * dt, 20 * S, W - 20 * S);
+  f.hx = clamp(f.hx + Math.sin(f.t * 0.37) * 18 * S * dt, panelW() + 20 * S, W - 20 * S);
   f.hy = clamp(f.hy + Math.cos(f.t * 0.29) * 12 * S * dt, 45 * S, H - 20 * S);
   const ax = (f.hx - f.x) * 3 + rand(-1, 1) * 260 * S;
   const ay = (f.hy - f.y) * 3 + rand(-1, 1) * 260 * S;
@@ -72,7 +74,7 @@ function newFrog(seed, entrance = true) {
   const f = Granota.create(seed);
   const g = f.g;
   frog = {
-    f, g, x: frog ? frog.x : W / 2, y: frog ? frog.y : H * 0.6,
+    f, g, x: frog ? frog.x : (W + panelW()) / 2, y: frog ? frog.y : H * 0.6,
     lift: 0, pose: 'idle', lx: 0, ly: 0, act: null, plan: [], tongue: null,
     // Paràmetres de moviment derivats del cos
     hopDist: (16 + 16 * g.jumpy) * (1 - 0.3 * g.mass),
@@ -434,6 +436,8 @@ function toggleDuel() {
   document.getElementById('duelBtn').classList.toggle('on', duelMode);
   document.getElementById('duelbar').hidden = !duelMode;
   document.getElementById('rate').hidden = duelMode;
+  document.getElementById('partsBar').hidden = duelMode;
+  document.body.classList.toggle('rating', !duelMode);
   document.getElementById('info').style.visibility = duelMode ? 'hidden' : '';
   if (duelMode) newDuel();
   updateVoteUI();

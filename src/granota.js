@@ -612,12 +612,12 @@ function render(g, poseName, lookX = 0, lookY = 0) {
       const elx = CX - ax - (g.arms === 'stubby' ? 1.3 : 0.9), ely = top + (G - 2 - top) * 0.55;
       const wx = CX - ax + 0.4, wy = G - 2.4;
       const arm = (x, y) => capsule(sx, top, elx, ely, aw + 0.4)(x, y) || capsule(elx, ely, wx, wy, aw)(x, y);
-      const aIn = stamp(both(arm), null, { color: legHex, soft: true, noOutlineAbove: Math.round(top) + 2 });
+      const aIn = stamp(both(arm), null, { color: legHex, soft: true, noOutlineAbove: Math.round(top) });
       // cara interna del braç il·luminada i externa ombrejada (el separa de la cuixa)
       for (let y = Math.ceil(top); y < G - 1; y++) for (let x = 0; x < GW; x++) {
         if (!aIn[idx(x, y)]) continue;
         const inward = x < CX ? 1 : -1;
-        if (y < top + 2) lvl[idx(x, y)] = 0;
+        if (y < top + 1) lvl[idx(x, y)] = 0;
         else if (!aIn[idx(x + inward, y)]) lvl[idx(x, y)] = 1;
         else if (!aIn[idx(x - inward, y)]) lvl[idx(x, y)] = -1;
       }

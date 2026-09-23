@@ -7,9 +7,9 @@ Obre `index.html` al navegador (no cal servidor).
 
 - **↻ Nova granota** (dalt a la dreta, o tecla `R`): reinicia amb una granota nova i diferent.
 - **▦ Galeria** (tecla `G`): mostra 30 granotes aleatòries; clica'n una per adoptar-la.
-- **Puntuació d'1 a 5** (😖 🙁 😐 🙂 😍 a baix al centre, o tecles `1`–`5`): un clic puntua i passa a la
+- **Puntuació d'1 a 5** (columna de botons grans a tota l'esquerra: 😍 a dalt, 😖 a baix; o tecles `1`–`5`): un clic puntua i passa a la
   granota següent. El 3 també informa ("normal").
-- **Parts** (Cos, Colors, Ulls, Boca, Panxa, Potes, Patró): cada una té 👍 i 👎 directes (opcionals).
+- **Parts** (a baix: Cos, Colors, Ulls, Boca, Panxa, Potes, Patró): cada una té 👍 i 👎 directes (opcionals).
   Marca només el que et crida l'atenció; la resta agafa la puntuació general. Amb un 3 només compten les parts.
 - **⚔ Duel** (tecla `D`): dues granotes de costat; tria la que t'agrada més (`←` / `→` o clic),
   `↑` les dues, `↓` cap. És la manera més ràpida i fiable d'ensenyar-li el teu gust.

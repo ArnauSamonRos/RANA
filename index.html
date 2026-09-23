@@ -24,20 +24,24 @@
   #gallery .grid button { background: none; border: 2px solid transparent; padding: 0; cursor: pointer; }
   #gallery .grid button:hover { border-color: #2a2230; }
   #gallery .grid canvas { width: 100%; image-rendering: pixelated; display: block; }
-  #rate { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 14px; width: max-content; max-width: calc(100vw - 32px); }
+  :root { --panel: 132px; }
+  #rate { position: fixed; left: 0; top: 0; bottom: 0; width: var(--panel); padding: 12px 12px 12px 10px; box-sizing: border-box; background: #fff; border-right: 3px solid #2a2230; display: flex; }
+  #partsBar { position: fixed; left: var(--panel); right: 0; bottom: 16px; display: flex; justify-content: center; padding: 0 12px; }
   #parts { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
   .part { display: flex; align-items: stretch; background: #fff; border: 2px solid #2a2230; box-shadow: 2px 2px 0 #2a2230; font-size: 13px; }
   .part span { padding: 4px 6px 4px 8px; }
   .part button { font: inherit; border: 0; border-left: 2px solid #2a2230; background: #fff; padding: 3px 6px; cursor: pointer; }
   .part button.up { background: #bfe8a4; }
   .part button.down { background: #f4b8b8; }
-  #scale { display: flex; gap: 10px; }
-  #scale .star { font-size: 30px; padding: 8px 14px 6px; display: flex; flex-direction: column; align-items: center; line-height: 1; border-width: 3px; box-shadow: 4px 4px 0 #2a2230; }
-  #scale .star small { font-size: 11px; margin-top: 4px; opacity: .6; }
+  #scale { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  #scale .star { flex: 1; min-height: 0; font-size: 46px; padding: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; border-width: 3px; box-shadow: 4px 4px 0 #2a2230; }
+  #scale .star:hover { background: #f1f7e8; }
+  #scale .star small { font-size: 13px; margin-top: 6px; opacity: .6; }
   #scale .star:disabled { opacity: .5; cursor: default; }
   #scale .star.on { background: #2a2230; color: #fff; }
   #duelbar { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; width: max-content; max-width: calc(100vw - 32px); }
-  #duelbar[hidden], #rate[hidden] { display: none; }
+  #duelbar[hidden], #rate[hidden], #partsBar[hidden] { display: none; }
+  body.rating #info, body.rating #learn { left: calc(var(--panel) + 16px); }
   #duelbar button { font-size: 18px; padding: 12px 18px; }
   #duelBtn.on { background: #2a2230; color: #fff; }
   #learn { position: fixed; left: 16px; top: 58px; font-size: 13px; max-width: calc(100vw - 32px); }
@@ -58,10 +62,10 @@
   #gallery .cell .votes { display: flex; justify-content: center; gap: 6px; }
   #gallery .cell .votes button { font-size: 13px; padding: 2px 8px; border: 2px solid #2a2230; background: #fff; cursor: pointer; }
   #gallery .cell .votes button.on { background: #2a2230; }
-  @media (max-width: 520px) { #info { top: 64px; } #learn { top: 104px; } #scale { gap: 6px; } #scale .star { font-size: 24px; padding: 6px 9px 4px; } #buttons .px { padding: 6px 8px; font-size: 12px; } #duelbar button { font-size: 15px; padding: 10px 12px; } }
+  @media (max-width: 520px) { :root { --panel: 86px; } #buttons { left: calc(var(--panel) + 8px); right: 8px; flex-wrap: wrap; justify-content: flex-end; gap: 6px; } #info { top: 62px; } #learn { top: 102px; } #scale { gap: 8px; } #scale .star { font-size: 34px; } #rate { padding: 8px 8px 8px 6px; } #buttons .px { padding: 6px 8px; font-size: 12px; } #duelbar button { font-size: 15px; padding: 10px 12px; } }
 </style>
 </head>
-<body>
+<body class="rating">
 <canvas id="c"></canvas>
 <div id="info" class="hud"><div><div id="name"></div><div id="seed"></div></div></div>
 <div id="buttons" class="hud">
@@ -70,14 +74,16 @@
   <button id="restart" class="px" title="Nova granota (R)">↻ Nova granota</button>
 </div>
 <div id="rate">
-  <div id="parts" title="Opcional: marca només les parts que t'agraden o no; la resta agafa la puntuació general"></div>
   <div id="scale">
-    <button class="px star" data-s="1" title="Gens (1)">😖<small>1</small></button>
-    <button class="px star" data-s="2" title="Poc (2)">🙁<small>2</small></button>
-    <button class="px star" data-s="3" title="Normal (3)">😐<small>3</small></button>
-    <button class="px star" data-s="4" title="M'agrada (4)">🙂<small>4</small></button>
     <button class="px star" data-s="5" title="M'encanta (5)">😍<small>5</small></button>
+    <button class="px star" data-s="4" title="M'agrada (4)">🙂<small>4</small></button>
+    <button class="px star" data-s="3" title="Normal (3)">😐<small>3</small></button>
+    <button class="px star" data-s="2" title="Poc (2)">🙁<small>2</small></button>
+    <button class="px star" data-s="1" title="Gens (1)">😖<small>1</small></button>
   </div>
+</div>
+<div id="partsBar">
+  <div id="parts" title="Opcional: marca només les parts que t'agraden o no; la resta agafa la puntuació general"></div>
 </div>
 <div id="duelbar" hidden>
   <button class="px" data-r="a" title="Tecla ←">◀ Aquesta</button>
