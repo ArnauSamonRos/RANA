@@ -12,7 +12,7 @@ let W, H, S;
 function resize() {
   W = cv.width = innerWidth;
   H = cv.height = innerHeight;
-  S = Math.max(2, Math.round(Math.min(W, H) / 210));
+  S = Math.max(2, Math.round(Math.min(W, H) / 250));
   ctx.imageSmoothingEnabled = false;
 }
 addEventListener('resize', resize);
@@ -579,9 +579,9 @@ function fillGallery() {
     const f = Granota.create(seed);
     const fr = f.frame('idle');
     const c = document.createElement('canvas');
-    c.width = 68 * 2; c.height = 54 * 2;               // retall al voltant de la granota
+    c.width = 76 * 2; c.height = 60 * 2;               // retall al voltant de la granota
     const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
-    x.drawImage(fr.canvas, 8, G - 50, 68, 54, 0, 0, c.width, c.height);
+    x.drawImage(fr.canvas, 4, G - 56, 76, 60, 0, 0, c.width, c.height);
     const b = document.createElement('button');
     b.title = f.g.name;
     b.append(c);

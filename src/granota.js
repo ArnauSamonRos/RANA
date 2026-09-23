@@ -378,6 +378,13 @@ function genome(seed) {
   g.curious = R.range(0.3, 1);
 
   g.name = nameOf(g);
+
+  // Escala de dibuix: granotes més grans (més píxels = més detall, com la referència).
+  // Es fa al final perquè no canviï cap tret ni cap sorteig (els vots continuen valent).
+  const K = 1.3;
+  g.bw *= K; g.bh *= K; g.tw *= K; g.th *= K; g.legLen *= K; g.armLen *= K;
+  g.er *= 1.15;
+  for (const p of g.patterns) if (p.list) for (const sp of p.list) sp.r *= K;
   return g;
 }
 
@@ -571,6 +578,14 @@ function render(g, poseName, lookX = 0, lookY = 0) {
 
   // --- Cos + patrons
   const bodyIn = stamp(bodyMask, null, { color: g.body, soft: true });
+  // Volum: costat dret i part baixa més foscos, franja de llum a dalt a l'esquerra
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+    const k = idx(x, y);
+    if (!bodyIn[k] || lvl[k] !== 0) continue;
+    const u = U(x + 0.5), v = V(y + 0.5);
+    if ((u > 0.62 && v > -0.35) || (v > 0.78 && Math.abs(u) > 0.35) || (u > 0.45 && v > 0.55)) lvl[k] = -1;
+    else if (u < -0.3 && u > -0.8 && v < -0.25 && v > -0.9) lvl[k] = 1;
+  }
   applyPatterns(g, col, lvl, bodyIn, U, V, eyeY, cy, bodyH, idx, 'body');
 
   // --- Panxa
@@ -589,7 +604,24 @@ function render(g, poseName, lookX = 0, lookY = 0) {
       };
     }
     else { const t2 = bt + (bottom - bt) * 0.2; bm = ellipse(CX, (t2 + bottom) / 2 + 1, bodyW * g.bellyW * 0.85, (bottom - t2) / 2 + 1); }
-    const bIn = stamp(bm, null, { color: g.belly, outline: false, clip: bodyIn, soft: true });
+    // la panxa mai és blanca pura: com a la referència, sempre té una mica de to
+    const [bh2, bs2, bl2] = hexToHsl(g.belly);
+    const bellyHex = bl2 > 0.86 ? hslToHex(bh2, Math.max(bs2, 0.25), 0.84) : g.belly;
+    const bIn = stamp(bm, null, { color: bellyHex, outline: false, clip: bodyIn, soft: true });
+    // volum de la panxa: més fosca a baix i als costats, llum a dalt a l'esquerra
+    let bTop = GH, bBot = 0;
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (bIn[idx(x, y)]) { bTop = Math.min(bTop, y); bBot = Math.max(bBot, y); }
+    for (let y = bTop; y <= bBot; y++) {
+      let x0 = GW, x1 = -1;
+      for (let x = 0; x < GW; x++) if (bIn[idx(x, y)]) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
+      for (let x = x0; x <= x1; x++) {
+        const k = idx(x, y);
+        if (!bIn[k] || lvl[k] !== 0) continue;
+        const t = (y - bTop) / Math.max(1, bBot - bTop), w = (x - x0) / Math.max(1, x1 - x0);
+        if (t > 0.8 || (w > 0.82 && t > 0.3)) lvl[k] = -1;
+        else if (w < 0.35 && t < 0.35) lvl[k] = 1;
+      }
+    }
     if (g.navel) {                                    // melic: línia i marca a la part baixa de la panxa
       const ny = Math.round(bottom - 4), nw = Math.round(bodyW * 0.3);
       for (let x = -nw; x < nw; x++) { const k = idx(CX + x, ny); if (bIn[k]) lvl[k] = -1; }
