@@ -477,6 +477,7 @@ function render(g, poseName, lookX = 0, lookY = 0) {
         const x = list[i], y = list[i + 1];
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           const nx = x + dx, ny = y + dy;
+          if (o.noOutlineAbove !== undefined && ny < o.noOutlineAbove) continue;
           if (inb(nx, ny) && !inside[idx(nx, ny)]) { col[idx(nx, ny)] = g.outline; lvl[idx(nx, ny)] = 0; }
         }
       }
@@ -599,16 +600,34 @@ function render(g, poseName, lookX = 0, lookY = 0) {
     // braços per dins de les cuixes i sense tocar-se entre ells
     const inner = g.thighs === 'hidden' ? bodyW * 0.75 : bodyW - g.tw * 1.2 - 1.5;
     const ax = Math.max(2.5, Math.min(bodyW * g.armX + 2.5, inner));
-    const aw = g.arms === 'stubby' ? 1.6 : 1.1;
+    const aw = g.arms === 'stubby' ? 1.9 : 1.4;
     const armStyle = pose.arms || 'sit';
     if (armStyle === 'sit') {
+      // Braç com a la referència: neix del costat de la panxa fos amb el cos (sense
+      // contorn a dalt), baixa amb un petit colze cap enfora, més gruixut a dalt,
+      // i acaba en una mà ampla recolzada a terra que apunta cap endins.
       const len = legs === 'crouch' ? 0.6 : 1;
-      stamp(both(capsule(CX - ax + 0.5, shoulderY + (1 - len) * 3, CX - ax - 0.5, G - 2, aw)), null, { color: legHex });
-      if (g.arms === 'long' && g.feetAccent) {          // ratlla de color a la cara interna del braç
-        const xs = Math.floor(CX - ax + 0.5);
-        for (let y = Math.ceil(shoulderY + (1 - len) * 3 + 2); y < G - 2; y++) { dot(xs, y, g.accent); dot(2 * CX - xs - 1, y, g.accent); }
+      const top = shoulderY + (1 - len) * 3;
+      const sx = CX - ax + 0.6;
+      const elx = CX - ax - (g.arms === 'stubby' ? 1.3 : 0.9), ely = top + (G - 2 - top) * 0.55;
+      const wx = CX - ax + 0.4, wy = G - 2.4;
+      const arm = (x, y) => capsule(sx, top, elx, ely, aw + 0.4)(x, y) || capsule(elx, ely, wx, wy, aw)(x, y);
+      const aIn = stamp(both(arm), null, { color: legHex, soft: true, noOutlineAbove: Math.round(top) + 2 });
+      // cara interna del braç il·luminada i externa ombrejada (el separa de la cuixa)
+      for (let y = Math.ceil(top); y < G - 1; y++) for (let x = 0; x < GW; x++) {
+        if (!aIn[idx(x, y)]) continue;
+        const inward = x < CX ? 1 : -1;
+        if (y < top + 2) lvl[idx(x, y)] = 0;
+        else if (!aIn[idx(x + inward, y)]) lvl[idx(x, y)] = 1;
+        else if (!aIn[idx(x - inward, y)]) lvl[idx(x, y)] = -1;
       }
-      handRow(CX - ax, G - 1);
+      if (g.arms === 'long' && g.feetAccent) {          // ratlla de color a la cara interna del braç
+        for (let y = Math.ceil(top + 2); y < G - 2; y++) {
+          const t = (y - top) / (G - 2 - top), xs = Math.floor((t < 0.55 ? sx + (elx - sx) * t / 0.55 : elx + (wx - elx) * (t - 0.55) / 0.45) + aw * 0.6);
+          dot(xs, y, g.accent); dot(2 * CX - xs - 1, y, g.accent);
+        }
+      }
+      handRow(wx + 1, G - 1);
     } else if (armStyle === 'down') {
       stamp(both(capsule(CX - ax, shoulderY, CX - ax - 1, bottom + 3, aw)), null, { color: legHex });
     } else if (armStyle === 'out') {
@@ -626,17 +645,21 @@ function render(g, poseName, lookX = 0, lookY = 0) {
     if (g.feet === 'toes') for (let x = Math.ceil(x0) + 1; x < x1 - 1; x += 2) { dot(x, y, g.outline); dot(2 * CX - x - 1, y, g.outline); }
     if (g.feet === 'pads') { dot(Math.floor(x0), y, variant(footHex, 1)); dot(2 * CX - Math.floor(x0) - 1, y, variant(footHex, 1)); }
   }
+  // Mà: 5 píxels d'ample i 2 d'alt (3 amb dits llargs), amb tres dits separats
+  // per píxels foscos a la fila de terra, com a la referència.
   function handRow(x, y) {
+    const xi = Math.round(x);
+    const both2 = (c, yy, colr, l = 0) => { dot(c, yy, colr, l); dot(2 * CX - c - 1, yy, colr, l); };
     if (g.feet === 'fingers') {                        // dits llargs marcats amb línies
-      const xi = Math.round(x);
       stamp(both(rect(xi - 2, y - 2, xi + 3, y + 1)), null, { color: footHex, shade: false });
-      for (const c of [xi - 1, xi + 1]) for (let yy = y - 2; yy < y; yy++) { dot(c, yy, g.outline); dot(2 * CX - c - 1, yy, g.outline); }
+      for (const c of [xi - 1, xi + 1]) for (let yy = y - 2; yy < y; yy++) both2(c, yy, g.outline);
       return;
     }
-    const m = rect(x - 2, y, x + 2, y + 1);
-    stamp(both(m), null, { color: footHex, shade: false });
-    if (g.feet !== 'webbed') { dot(Math.round(x - 0.5), y, g.outline); dot(2 * CX - Math.round(x - 0.5) - 1, y, g.outline); }
-    if (g.arms === 'pads') { dot(Math.floor(x - 2), y, variant(footHex, 1)); dot(2 * CX - Math.floor(x - 2) - 1, y, variant(footHex, 1)); }
+    const wide = 0;
+    stamp(both(rect(xi - 2 - wide, y - 1, xi + 3, y + 1)), null, { color: footHex, shade: false });
+    for (let c = xi - 2 - wide; c <= xi + 2; c++) both2(c, y - 1, footHex, 1);    // part de dalt il·luminada
+    if (g.feet !== 'webbed') for (const c of [xi - 1, xi + 1]) both2(c, y, g.outline);
+    if (g.arms === 'pads') for (const c of [xi - 2, xi, xi + 2]) both2(c, y, footHex, 1);
   }
   function dot(x, y, c, l = 0) { x = Math.floor(x); y = Math.floor(y); if (inb(x, y)) { col[idx(x, y)] = c; lvl[idx(x, y)] = l; } }
 
