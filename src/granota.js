@@ -373,7 +373,7 @@ function genome(seed) {
 
 function colorWord(hex) {
   const [h, s, l] = hexToHsl(hex);
-  if (s < 0.14) return l < 0.3 ? 'negra' : l > 0.7 ? 'blanca' : 'grisa';
+  if (s < 0.2) return l < 0.3 ? 'negra' : l > 0.7 ? 'blanca' : 'grisa';
   if (h < 14 || h >= 340) return l < 0.35 ? 'granat' : 'vermella';
   if (h < 38) return l < 0.45 ? 'marró' : 'taronja';
   if (h < 58) return l < 0.45 ? 'marró' : s < 0.45 ? 'terrosa' : 'groga';

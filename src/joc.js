@@ -322,6 +322,16 @@ function loop(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
 
+  if (duelMode && !galleryOpen) {
+    updateDuel(dt);
+    updatePuffs(dt);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, W, H);
+    drawDuel();
+    drawPuffs();
+    requestAnimationFrame(loop);
+    return;
+  }
   if (!galleryOpen) {
     flyTimer -= dt;
     if (flyTimer <= 0) { if (flies.length < 2) spawnFly(); flyTimer = rand(6, 14); }
@@ -331,10 +341,7 @@ function loop(now) {
     frog.act.t += dt;
     if (frog.act.run(frog.act.t, dt)) nextAction();
     for (let i = flies.length - 1; i >= 0; i--) if (flies[i].dead) flies.splice(i, 1);
-    for (let i = puffs.length - 1; i >= 0; i--) {
-      const p = puffs[i]; p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.92; p.vy *= 0.92;
-      if (p.t > p.life) puffs.splice(i, 1);
-    }
+    updatePuffs(dt);
   }
 
   ctx.fillStyle = '#fff';
@@ -343,88 +350,149 @@ function loop(now) {
   drawFrog();
   if (frog.tongue) drawTongue(frog.tongue);
   flies.filter(f => f.y >= frog.y - 30 * S || f.caught).forEach(f => drawFly(f, now));
+  drawPuffs();
+  requestAnimationFrame(loop);
+}
+function updatePuffs(dt) {
+  for (let i = puffs.length - 1; i >= 0; i--) {
+    const p = puffs[i]; p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.92; p.vy *= 0.92;
+    if (p.t > p.life) puffs.splice(i, 1);
+  }
+}
+function drawPuffs() {
   for (const p of puffs) {
     ctx.fillStyle = `rgba(${p.rgb},${1 - p.t / p.life})`;
     const s = p.s * S;
     ctx.fillRect(Math.round(p.x / S) * S, Math.round(p.y / S) * S, s, s);
   }
-  requestAnimationFrame(loop);
 }
 
 // ---- Interfície -------------------------------------------------------------------
 const randomSeed = () => (Math.random() * 4294967296) >>> 0;
 // Les granotes noves es trien segons el gust après (src/gust.js)
-function restart() { flies.forEach(f => { if (f.caught) f.dead = true; }); newFrog(Gust.next()); }
+function restart() {
+  if (duelMode) { newDuel(); return; }
+  flies.forEach(f => { if (f.caught) f.dead = true; });
+  newFrog(Gust.next());
+}
 
-// ---- M'agrada / No m'agrada ------------------------------------------------------
-// Votar passa automàticament a la granota següent
+// ---- Puntuació d'1 a 5 -------------------------------------------------------------
+// Un clic puntua i passa a la granota següent. Les parts marcades (opcional)
+// manen sobre la puntuació general.
 let voting = false;
-function vote(v) {
-  if (voting || galleryOpen) return;
-  const parts = Object.assign({}, partState);
-  if (!v && !Object.keys(parts).length) return;
+const starBtns = [...document.querySelectorAll('#scale .star')];
+function rateFrog(stars) {
+  if (voting || galleryOpen || duelMode) return;
   voting = true;
-  Gust.vote(frog.g.seed, v, parts);
-  if (!Object.keys(parts).length && Gust.voteOf(frog.g.seed) !== v) Gust.vote(frog.g.seed, v);   // si ja estava votada, no l'anul·lis
+  Gust.rate(frog.g.seed, stars, Object.assign({}, partState));
   updateVoteUI();
-  const good = v > 0 || (!v && Object.values(parts).some(x => x > 0));
-  if (good) poof(frog.x, frog.y - 20 * S, 16, '240,110,140', 45);
-  document.querySelectorAll('#rate button').forEach(b => { b.disabled = true; });
+  starBtns.forEach(b => { b.classList.toggle('on', +b.dataset.s === stars); b.disabled = true; });
+  if (stars >= 4) poof(frog.x, frog.y - 20 * S, stars === 5 ? 20 : 10, '240,110,140', 45);
   setTimeout(() => {
     restart();
     voting = false;
-    document.querySelectorAll('#rate button').forEach(b => { b.disabled = false; });
-  }, good ? 450 : 250);
+    starBtns.forEach(b => { b.classList.remove('on'); b.disabled = false; });
+  }, stars >= 4 ? 300 : 160);
 }
-const like = () => vote(1), dislike = () => vote(-1);
+starBtns.forEach(b => b.addEventListener('click', () => rateFrog(+b.dataset.s)));
 
 // ---- Valoració per parts ---------------------------------------------------------
-// Cada part (cos, colors, ulls, boca, panxa, potes, patró) es pot marcar amb
-// 👍 o 👎. Les parts marcades manen sobre la valoració global.
+// Cada part té 👍 i 👎 directes; tornar a clicar el mateix el treu.
 let partState = {};
 const partsEl = document.getElementById('parts');
-for (const [i, p] of Aprenentatge.PARTS.entries()) {
-  const b = document.createElement('button');
-  b.dataset.part = p.id;
-  b.title = `${p.label} (tecla ${i + 1})`;
-  b.addEventListener('click', () => cyclePart(p.id));
-  partsEl.append(b);
-}
-function cyclePart(id) {
-  const cur = partState[id] || 0;
-  const nxt = cur === 0 ? 1 : cur === 1 ? -1 : 0;
-  if (nxt) partState[id] = nxt; else delete partState[id];
-  renderParts();
+for (const p of Aprenentatge.PARTS) {
+  const el = document.createElement('div');
+  el.className = 'part';
+  el.dataset.part = p.id;
+  el.innerHTML = `<span>${p.label}</span><button data-v="1" title="${p.label}: m'agrada">👍</button><button data-v="-1" title="${p.label}: no m'agrada">👎</button>`;
+  el.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    const v = +b.dataset.v;
+    if (partState[p.id] === v) delete partState[p.id]; else partState[p.id] = v;
+    renderParts();
+  }));
+  partsEl.append(el);
 }
 function renderParts() {
-  for (const b of partsEl.children) {
-    const p = Aprenentatge.PARTS.find(x => x.id === b.dataset.part);
-    const s = partState[p.id] || 0;
-    b.textContent = p.label + (s > 0 ? ' 👍' : s < 0 ? ' 👎' : '');
-    b.className = s > 0 ? 'up' : s < 0 ? 'down' : '';
+  for (const el of partsEl.children) {
+    const s = partState[el.dataset.part] || 0;
+    el.querySelector('[data-v="1"]').className = s > 0 ? 'up' : '';
+    el.querySelector('[data-v="-1"]').className = s < 0 ? 'down' : '';
   }
-  document.getElementById('partsOnly').hidden = !Object.keys(partState).length;
 }
 function resetParts() { partState = {}; renderParts(); }
 
+// ---- Duel: tria la millor de dues granotes -------------------------------------------
+// Comparar és més ràpid i fiable que puntuar: el sistema aprèn de les diferències.
+let duelMode = false, duelFrogs = null;
+function makeDuelFrog(seed) {
+  return { seed, f: Granota.create(seed), t: rand(0, 2), blinkAt: rand(1, 4), pose: 'idle', lx: 0 };
+}
+function newDuel() { duelFrogs = Gust.duelPair().map(makeDuelFrog); }
+function toggleDuel() {
+  if (galleryOpen) return;
+  duelMode = !duelMode;
+  document.getElementById('duelBtn').classList.toggle('on', duelMode);
+  document.getElementById('duelbar').hidden = !duelMode;
+  document.getElementById('rate').hidden = duelMode;
+  document.getElementById('info').style.visibility = duelMode ? 'hidden' : '';
+  if (duelMode) newDuel();
+  updateVoteUI();
+}
+function pickDuel(r) {
+  if (!duelMode || voting || galleryOpen) return;
+  voting = true;
+  const [A, B] = duelFrogs;
+  Gust.duel(A.seed, B.seed, r);
+  updateVoteUI();
+  const pos = duelPos();
+  if (r === 'a' || r === 'both') poof(pos[0].x, pos[0].y - 20 * S, 14, '240,110,140', 45);
+  if (r === 'b' || r === 'both') poof(pos[1].x, pos[1].y - 20 * S, 14, '240,110,140', 45);
+  if (r === 'none') { poof(pos[0].x, pos[0].y - 14 * S, 10); poof(pos[1].x, pos[1].y - 14 * S, 10); }
+  setTimeout(() => { newDuel(); voting = false; }, 260);
+}
+const duelPos = () => [{ x: W * 0.28, y: H * 0.6 }, { x: W * 0.72, y: H * 0.6 }];
+function updateDuel(dt) {
+  for (const d of duelFrogs) {
+    d.t += dt;
+    if (d.t > d.blinkAt && d.t < d.blinkAt + 0.14) d.pose = 'blink';
+    else { if (d.t > d.blinkAt + 0.14) d.blinkAt = d.t + rand(1.5, 4); d.pose = Math.floor(d.t / 0.7) % 2 ? 'breath' : 'idle'; }
+  }
+  duelFrogs[0].lx = 1; duelFrogs[1].lx = -1;         // es miren l'una a l'altra
+}
+function drawDuel() {
+  const pos = duelPos();
+  ctx.font = '13px ui-monospace, Menlo, Consolas, monospace';
+  ctx.textAlign = 'center';
+  duelFrogs.forEach((d, i) => {
+    const fr = d.f.frame(d.pose, d.lx, 0), p = pos[i];
+    ctx.fillStyle = 'rgba(0,0,0,0.10)';
+    ctx.beginPath(); ctx.ellipse(p.x, p.y + S, (fr.bodyW + 5) * S, 3 * S, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.drawImage(fr.canvas, Math.round(p.x / S) * S - CX * S, Math.round(p.y / S) * S - G * S, fr.canvas.width * S, fr.canvas.height * S);
+    ctx.fillStyle = '#2a2230';
+    ctx.fillText(d.f.g.name, p.x, p.y + 22);
+  });
+  ctx.fillStyle = 'rgba(42,34,48,.55)';
+  ctx.fillText('Quina t\'agrada més?  ←  →   ·   ↑ les dues   ·   ↓ cap', W / 2, H * 0.6 - 70 * S);
+  ctx.textAlign = 'start';
+}
+document.getElementById('duelBtn').addEventListener('click', toggleDuel);
+document.querySelectorAll('#duelbar button').forEach(b => b.addEventListener('click', () => pickDuel(b.dataset.r)));
+
 function updateVoteUI() {
   if (!partsEl.children.length) return;
-  const v = Gust.voteOf(frog.g.seed);
-  document.getElementById('like').classList.toggle('on', v > 0);
-  document.getElementById('dislike').classList.toggle('on', v < 0);
-  const { L, D, P, local, base } = Gust.counts();
-  const n = L + D + P + base;
+  const { L, D, P, K, local, base } = Gust.counts();
+  const n = L + D + P + K + base;
   document.getElementById('learnBtn').textContent = n
-    ? `Après de ${n} vots — què he après?`
-    : 'Vota 👍 / 👎 (o per parts) i aprendré quines granotes t\'agraden';
+    ? `Après de ${n} valoracions — què he après?`
+    : 'Puntua d\'1 a 5 (o fes duels ⚔) i aprendré quines granotes t\'agraden';
   document.getElementById('baseInfo').textContent =
-    `${base} vots consolidats al projecte + ${local} en aquest navegador (${L} 👍 · ${D} 👎 · ${P} només per parts). ` +
-    'Exporta els vots per incorporar-los al model base.';
+    `${base} valoracions consolidades al projecte + ${local} en aquest navegador ` +
+    `(${L} positives · ${D} negatives · ${P} neutres o només per parts · ${K} duels). Exporta-les per incorporar-les al model base.`;
   if (!document.getElementById('learnPanel').hidden) fillLearn();
 }
 function fillLearn() {
   const ins = Gust.insights();
-  const item = (e, cls) => `<span class="${cls}">${e.label}</span> <span class="n">(${e.l}👍 ${e.d}👎)</span>`;
+  const item = (e, cls) => `<span class="${cls}">${e.label}</span> <span class="n">(${e.w > 0 ? '+' : ''}${e.w.toFixed(1)} · ${e.n} val.)</span>`;
   const rows = ins.parts.map(p => {
     const cells = [...p.pos.map(e => item(e, 'up')), ...p.neg.map(e => item(e, 'down'))];
     return `<tr><td>${p.label}</td><td>${cells.join(' · ') || '<span class="n">encara res clar</span>'}</td></tr>`;
@@ -433,9 +501,6 @@ function fillLearn() {
   document.getElementById('learnBody').innerHTML =
     `<table>${rows}</table><h4>Combinacions</h4><div>${pairs.join('<br>') || '<span class="n">encara res clar</span>'}</div><br>`;
 }
-document.getElementById('like').addEventListener('click', like);
-document.getElementById('dislike').addEventListener('click', dislike);
-document.getElementById('partsOnly').addEventListener('click', () => vote(0));
 document.getElementById('learnBtn').addEventListener('click', () => {
   const p = document.getElementById('learnPanel');
   p.hidden = !p.hidden;
@@ -462,18 +527,26 @@ document.getElementById('importFile').addEventListener('change', async e => {
 });
 
 document.getElementById('restart').addEventListener('click', restart);
-cv.addEventListener('pointerdown', e => spawnFly(e.clientX, e.clientY));
+cv.addEventListener('pointerdown', e => {
+  if (duelMode) pickDuel(e.clientX < W / 2 ? 'a' : 'b');
+  else spawnFly(e.clientX, e.clientY);
+});
 addEventListener('keydown', e => {
   if (e.target instanceof HTMLInputElement) return;
   if (e.key === 'r' || e.key === 'R') restart();
   if (e.key === 'g' || e.key === 'G') toggleGallery();
   if (e.key === 'Escape' && galleryOpen) toggleGallery();
   if (galleryOpen) return;
-  if (e.key === 'm' || e.key === 'M') like();
-  if (e.key === 'n' || e.key === 'N') dislike();
-  if (e.key === 'Enter' && Object.keys(partState).length) { e.preventDefault(); vote(0); }
-  const i = Number(e.key) - 1;
-  if (Number.isInteger(i) && i >= 0 && i < Aprenentatge.PARTS.length) cyclePart(Aprenentatge.PARTS[i].id);
+  if (e.key === 'd' || e.key === 'D') toggleDuel();
+  if (duelMode) {
+    const r = { ArrowLeft: 'a', ArrowRight: 'b', ArrowUp: 'both', ArrowDown: 'none' }[e.key];
+    if (r) { e.preventDefault(); pickDuel(r); }
+    if (e.key === 'Escape') toggleDuel();
+    return;
+  }
+  if (/^[1-5]$/.test(e.key)) rateFrog(+e.key);
+  if (e.key === 'm' || e.key === 'M') rateFrog(5);
+  if (e.key === 'n' || e.key === 'N') rateFrog(1);
 });
 
 // Galeria: mostra moltes granotes alhora; clic per adoptar-ne una

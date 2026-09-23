@@ -26,16 +26,20 @@
   #gallery .grid canvas { width: 100%; image-rendering: pixelated; display: block; }
   #rate { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 14px; width: max-content; max-width: calc(100vw - 32px); }
   #parts { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
-  #parts button { font: inherit; font-size: 13px; padding: 5px 10px; cursor: pointer; color: #2a2230; background: #fff; border: 2px solid #2a2230; box-shadow: 2px 2px 0 #2a2230; }
-  #parts button.up { background: #d6f0c2; }
-  #parts button.down { background: #f6cfcf; }
-  #votebar { display: flex; gap: 28px; align-items: center; }
-  #partsOnly { font-size: 16px; padding: 12px 16px; }
-  #partsOnly[hidden] { display: none; }
-  #votebar button.vote { font-size: 38px; line-height: 1; padding: 14px 36px; border-width: 4px; box-shadow: 5px 5px 0 #2a2230; }
-  #votebar button.vote:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 #2a2230; }
-  #votebar button.vote:disabled { opacity: .5; cursor: default; }
-  button.vote.on { background: #2a2230; color: #fff; }
+  .part { display: flex; align-items: stretch; background: #fff; border: 2px solid #2a2230; box-shadow: 2px 2px 0 #2a2230; font-size: 13px; }
+  .part span { padding: 4px 6px 4px 8px; }
+  .part button { font: inherit; border: 0; border-left: 2px solid #2a2230; background: #fff; padding: 3px 6px; cursor: pointer; }
+  .part button.up { background: #bfe8a4; }
+  .part button.down { background: #f4b8b8; }
+  #scale { display: flex; gap: 10px; }
+  #scale .star { font-size: 30px; padding: 8px 14px 6px; display: flex; flex-direction: column; align-items: center; line-height: 1; border-width: 3px; box-shadow: 4px 4px 0 #2a2230; }
+  #scale .star small { font-size: 11px; margin-top: 4px; opacity: .6; }
+  #scale .star:disabled { opacity: .5; cursor: default; }
+  #scale .star.on { background: #2a2230; color: #fff; }
+  #duelbar { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; width: max-content; max-width: calc(100vw - 32px); }
+  #duelbar[hidden], #rate[hidden] { display: none; }
+  #duelbar button { font-size: 18px; padding: 12px 18px; }
+  #duelBtn.on { background: #2a2230; color: #fff; }
   #learn { position: fixed; left: 16px; top: 58px; font-size: 13px; max-width: calc(100vw - 32px); }
   button.link { font: inherit; background: none; border: 0; padding: 0; cursor: pointer; color: #2a2230; text-decoration: underline; text-underline-offset: 3px; }
   #learnPanel { margin-top: 8px; background: #fff; border: 3px solid #2a2230; box-shadow: 3px 3px 0 #2a2230; padding: 10px 12px; }
@@ -54,23 +58,32 @@
   #gallery .cell .votes { display: flex; justify-content: center; gap: 6px; }
   #gallery .cell .votes button { font-size: 13px; padding: 2px 8px; border: 2px solid #2a2230; background: #fff; cursor: pointer; }
   #gallery .cell .votes button.on { background: #2a2230; }
-  @media (max-width: 520px) { #info { top: 64px; } #learn { top: 104px; } #votebar button.vote { font-size: 30px; padding: 12px 24px; } #votebar { gap: 16px; } }
+  @media (max-width: 520px) { #info { top: 64px; } #learn { top: 104px; } #scale { gap: 6px; } #scale .star { font-size: 24px; padding: 6px 9px 4px; } #buttons .px { padding: 6px 8px; font-size: 12px; } #duelbar button { font-size: 15px; padding: 10px 12px; } }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="info" class="hud"><div><div id="name"></div><div id="seed"></div></div></div>
 <div id="buttons" class="hud">
+  <button id="duelBtn" class="px" title="Duel: tria la millor de dues (D)">⚔ Duel</button>
   <button id="galleryBtn" class="px" title="Galeria (G)">▦ Galeria</button>
   <button id="restart" class="px" title="Nova granota (R)">↻ Nova granota</button>
 </div>
 <div id="rate">
-  <div id="parts" title="Valora cada part per separat (tecles 1-7): clic = 👍, un altre clic = 👎, un altre = res"></div>
-  <div id="votebar">
-    <button id="dislike" class="px vote" title="No m'agrada (N)">👎</button>
-    <button id="partsOnly" class="px" title="Guarda només la valoració de les parts i passa a la següent (Enter)" hidden>Següent ➜</button>
-    <button id="like" class="px vote" title="M'agrada (M)">👍</button>
+  <div id="parts" title="Opcional: marca només les parts que t'agraden o no; la resta agafa la puntuació general"></div>
+  <div id="scale">
+    <button class="px star" data-s="1" title="Gens (1)">😖<small>1</small></button>
+    <button class="px star" data-s="2" title="Poc (2)">🙁<small>2</small></button>
+    <button class="px star" data-s="3" title="Normal (3)">😐<small>3</small></button>
+    <button class="px star" data-s="4" title="M'agrada (4)">🙂<small>4</small></button>
+    <button class="px star" data-s="5" title="M'encanta (5)">😍<small>5</small></button>
   </div>
+</div>
+<div id="duelbar" hidden>
+  <button class="px" data-r="a" title="Tecla ←">◀ Aquesta</button>
+  <button class="px" data-r="none" title="Tecla ↓">Cap</button>
+  <button class="px" data-r="both" title="Tecla ↑">Les dues</button>
+  <button class="px" data-r="b" title="Tecla →">Aquesta ▶</button>
 </div>
 <div id="learn">
   <button id="learnBtn" class="link"></button>

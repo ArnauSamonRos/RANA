@@ -7,11 +7,13 @@ Obre `index.html` al navegador (no cal servidor).
 
 - **↻ Nova granota** (dalt a la dreta, o tecla `R`): reinicia amb una granota nova i diferent.
 - **▦ Galeria** (tecla `G`): mostra 30 granotes aleatòries; clica'n una per adoptar-la.
-- **👍 / 👎** (botons grans a baix al centre, o tecles `M` / `N`): vota la granota i passa
-  automàticament a la següent. També es pot votar des de la galeria.
-- **Valoració per parts** (botons Cos, Colors, Ulls, Boca, Panxa, Potes, Patró, o tecles `1`–`7`):
-  cada clic canvia entre 👍, 👎 i res. Les parts marcades manen sobre el vot global; per exemple,
-  Ulls 👍 + Boca 👍 + Potes 👎. Es pot enviar amb 👍/👎 o, només amb les parts, amb **Següent ➜** (`Enter`).
+- **Puntuació d'1 a 5** (😖 🙁 😐 🙂 😍 a baix al centre, o tecles `1`–`5`): un clic puntua i passa a la
+  granota següent. El 3 també informa ("normal").
+- **Parts** (Cos, Colors, Ulls, Boca, Panxa, Potes, Patró): cada una té 👍 i 👎 directes (opcionals).
+  Marca només el que et crida l'atenció; la resta agafa la puntuació general. Amb un 3 només compten les parts.
+- **⚔ Duel** (tecla `D`): dues granotes de costat; tria la que t'agrada més (`←` / `→` o clic),
+  `↑` les dues, `↓` cap. És la manera més ràpida i fiable d'ensenyar-li el teu gust.
+- **Galeria**: també s'hi pot votar 👍 / 👎.
 - **"Què he après?"** (a dalt a l'esquerra, sota el nom): mostra quins trets t'agraden i quins no,
   i permet **exportar** / **importar** els vots en un fitxer.
 
@@ -62,16 +64,16 @@ encara que el generador canviï.
   migdiades i caça de mosques amb la llengua. La durada, l'alçada i la llargada dels salts depenen
   del pes i les potes de cada granota.
 
-- `src/aprenentatge.js` — com es converteix un vot en comptes (compartit per la pàgina i l'script):
-  cada tret pertany a una part i rep la valoració d'aquella part (o la global). A més es compten les
-  **combinacions** entre els trets principals de parts diferents (p. ex. "ulls contents + boca somrient"):
-  positiva si les dues parts agraden, negativa si alguna no.
-- `src/gust.js` — aprenentatge del teu gust. Cada granota es descompon en trets (tipus, paleta,
-  color, to, ulls, pupil·la, boca, panxa, potes, patrons, proporcions, mida...). Els vots donen a
-  cada tret un pes (log-odds, tipus Naive Bayes). Per crear una granota nova es proven 60 llavors,
-  es puntuen i se'n tria una amb probabilitat proporcional a `exp(puntuació / 1.5)`; un 15% de les
-  granotes surten totalment a l'atzar per continuar explorant. Els comptes són la suma del model
-  base (`src/model.js`, generat per `eines/entrena.js` a partir de `dades/*.json`) i dels vots del
-  navegador (`localStorage`).
+- `src/aprenentatge.js` — el model de preferències (compartit per la pàgina i l'script): una
+  **regressió logística** sobre els trets de cada granota i les **combinacions** entre els trets
+  principals de parts diferents (p. ex. "ulls contents + boca somrient"). Aprèn de:
+  - puntuacions 1–5 (la probabilitat que agradi ha de ser 0, 0.25, 0.5, 0.75 o 1),
+  - parts marcades (cada part s'entrena només amb els seus trets),
+  - duels (la guanyadora ha de puntuar més que la perdedora, model de Bradley-Terry).
+- `src/gust.js` — reentrena el model amb tots els vots després de cada valoració, prova 80 llavors per
+  granota nova i en tria una amb probabilitat proporcional a `exp(puntuació / 0.35)`; un 10% surten a
+  l'atzar per continuar explorant. Els duels es trien perquè les dues granotes puntuïn semblant però
+  siguin diferents (així cada tria ensenya més). Els vots es guarden al navegador (`localStorage`) i
+  es poden exportar i consolidar a `src/model.js` amb `eines/entrena.js`.
 
 `referencia/` conté les imatges originals que s'han fet servir com a referència.
