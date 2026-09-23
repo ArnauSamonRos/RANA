@@ -9,7 +9,7 @@ const Granota = (() => {
 
 // Versió del generador: s'apuja quan un mateix codi (llavor) passa a dibuixar
 // una granota diferent. Els vots guarden la versió i els trets per no perdre's.
-const VERSION = 7;
+const VERSION = 8;
 
 // ---------------------------------------------------------------- RNG ----
 function mulberry32(a) {
@@ -236,6 +236,18 @@ function genome(seed) {
   g.pBot = R.range(2.2, 3.1);
   g.taper = R.range(A.taper[0], A.taper[1]);
   g.waist = A.waist ? R.range(A.waist[0], A.waist[1]) : 0;   // cintura (forma de rellotge de sorra)
+  // Coll estret: cap ample i pla separat del cos per un coll (com la granota dard i la
+  // d'arbre de la referència). El cos es manté prim i alt, mai més gruixut.
+  const neckP = { arbre: 0.35, dard: 0.4, cintura: 0.3, bassa: 0.12 }[g.arch] || 0.04;
+  g.neck = R.chance(neckP) ? R.range(0.16, 0.24) : 0;
+  if (g.neck) {
+    g.headW = R.range(1.08, 1.18);
+    g.bw = Math.min(g.bw, R.range(9.5, 12));
+    g.bh = Math.max(g.bh, 2 * g.bw * R.range(1.0, 1.12));
+    g.taper = Math.min(g.taper, 0.1);
+    g.pTop = Math.max(g.pTop, R.range(2.5, 3.1));
+    g.waist = 0;
+  } else g.headW = 1;
 
   // --- Colors harmònics
   const pn = R.pick(A.pal);
@@ -440,6 +452,7 @@ function features(g) {
   if (g.brow && !g.angry && g.eyeType !== 'toad' && g.eyeType !== 'hooded') add('brow', 'celles');
   if (g.cheeks) add('cheeks', 'galtes clares');
   if (g.waist > 0.1) add('waist', 'cintura estreta');
+  if (g.neck) add('neck', 'cap ample i coll estret');
   if (g.feetAccent) add('facc', 'mans i peus de color');
   if (g.navel) add('navel', 'melic');
   if (g.nostrils) add('nost', 'narius');
@@ -530,11 +543,19 @@ function render(g, poseName, lookX = 0, lookY = 0) {
   const raise = legs === 'jump' ? g.legLen : legs === 'spread' ? g.legLen * 0.45 : 0;
   const bottom = G - 1 - raise - (g.thighs === 'hidden' && legs === 'sit' ? 0 : 0);
   const cy = bottom - bodyH / 2, top = bottom - bodyH;
+  // Coll: cap més ample a dalt, escletxa estreta just sota la boca i cos a sota
+  const neckV = -0.08;
+  const neckFactor = v => {
+    if (!g.neck) return 1;
+    const t = Math.max(0, Math.min(1, (v - (neckV - 0.1)) / 0.2)), sm = t * t * (3 - 2 * t);
+    return (1 + (g.headW - 1) * (1 - sm)) * (1 - g.neck * Math.exp(-(((v - neckV) / 0.09) ** 2)));
+  };
   const bodyMask = (x, y) => {
     const v = (y - cy) / (bodyH / 2);
     if (v < -1 || v > 1) return false;
     const w = bodyW * (1 + g.taper * v * 0.5) / (1 + g.taper * 0.5) * (1 + Math.max(0, g.taper) * 0.15)
-      * (1 - g.waist * Math.exp(-(((v - 0.12) / 0.38) ** 2)));       // cintura
+      * (1 - g.waist * Math.exp(-(((v - 0.12) / 0.38) ** 2)))        // cintura
+      * neckFactor(v);
     const u = (x - CX) / w;
     const p = v < 0 ? g.pTop : g.pBot;
     return Math.abs(u) ** p + Math.abs(v) ** p <= 1;
@@ -563,6 +584,7 @@ function render(g, poseName, lookX = 0, lookY = 0) {
   // Boca: sota els ulls i sempre dins la meitat superior del cos
   let mouthY = Math.round(eyeY + (small ? er + 1.5 : er + 2.2) + g.mouthGap);
   mouthY = clampN(mouthY, Math.round(eyeY + 2), Math.round(top + bodyH * 0.55));
+  if (g.neck) mouthY = Math.max(Math.round(eyeY + 2), Math.min(mouthY, Math.round(cy + neckV * bodyH / 2) - 1));   // boca al cap, sobre el coll
   const mouthW = g.mouth === 'small' ? 1.5 : Math.min(eyeDX + er * g.mouthW, bodyW * 0.8);
   // La zona inferior (panxa, braços) comença sota la boca
   const shoulderY = Math.max(mouthY + 3, bottom - Math.min(bodyH * (g.arms === 'long' ? 0.5 : 0.3), g.armLen));

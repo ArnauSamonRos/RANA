@@ -49,7 +49,8 @@ encara que el generador canviï.
     les puntes avall) o sense (mai oberta); galtes clares sota els ulls opcionals; narius i galtes opcionals.
   - **Panxa**: oval, gran, enorme (amb melic opcional), pitet (ampla a dalt i estreta a baix),
     papada, estriada o sense.
-  - **Cos**: cintura estreta opcional (forma de rellotge de sorra).
+  - **Cos**: cintura estreta opcional (forma de rellotge de sorra) o cap ample i pla amb coll estret
+    (com la granota dard i la d'arbre de la referència; sempre amb cos prim).
   - **Potes**: braços prims, grossos, amb ventoses o amagats; cuixes grosses, normals, primes o amagades;
     peus amb dits, dits llargs, ventoses o palmats; braços llargs; mans i peus d'un
     color de contrast.
