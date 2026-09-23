@@ -73,34 +73,70 @@ const Granota3D = (() => {
     return { col, dl };
   }
 
-  // Construeix les peces del model segons la pose
+  // Construeix les peces del model segons el genoma i la pose. Els trets de la vista
+  // de cara (forma del cos, coll, cap, ulls, potes, peus, panxa) es tradueixen a 3D
+  // perquè cada granota es reconegui també de perfil i d'esquena.
   const Q = 0.85;                                       // escala perquè la mida quadri amb la vista de cara
+  const DEPTH = { gripau: 1.22, toro: 1.15, banyuda: 1.22, pluja: 0.9, arbre: 0.92, dard: 0.98, cintura: 0.98, bassa: 1.05 };
   function build(g0, pose) {
-    const g = Object.assign({}, g0, { bw: g0.bw * Q, bh: g0.bh * Q, tw: g0.tw * Q, th: g0.th * Q, legLen: g0.legLen * Q, er: g0.er * 0.92 });
-    const W = g.bw, Hb = g.bh, L = Math.min(W * 1.05, 20), hw = g.headW || 1;
+    const g = Object.assign({}, g0, { bw: g0.bw * Q, bh: g0.bh * Q, tw: g0.tw * Q, th: g0.th * Q, legLen: g0.legLen * Q, er: g0.er * 0.92, armLen: g0.armLen * Q });
+    const W = g.bw, Hb = g.bh, hw = g.headW || 1;
+    const L = Math.min(W * (DEPTH[g.arch] || 1.05), 22);
+    const neck = g.neck > 0, round = g.arch === 'pluja' || (g.thighs === 'hidden' && g.arms === 'hidden');
+    const squareHead = g.pTop > 2.6;
     const legs = pose.legs || 'sit';
     const sx = pose.sx || 1, sy = pose.sy || 1;
     const lift = legs === 'jump' ? g.legLen * 0.6 : legs === 'spread' ? g.legLen * 0.3 : 0;
     // inclinació del cos: morro amunt en l'enlairament, avall en la caiguda
     const tilt = legs === 'jump' ? (pose.arms === 'down' ? -0.45 : -0.2) : legs === 'spread' ? 0.25 : 0;
     const parts = [];
-    const torsoC = [0, Hb * 0.4 * sy + lift, -L * 0.15], headC = [0, Hb * 0.64 * sy + lift, L * 0.42];
     const rot = (c) => {                                  // gira un punt del cos al voltant del maluc
       const pv = [0, lift + 1, -L * 0.6];
       const y = c[1] - pv[1], z = c[2] - pv[2];
       return [c[0], pv[1] + y * Math.cos(tilt) - z * Math.sin(tilt), pv[2] + y * Math.sin(tilt) + z * Math.cos(tilt)];
     };
-    parts.push(ell('body', rot(torsoC), [W * 0.9 * sx, Hb * 0.42 * sy, L * 0.95], -tilt));
-    const hc = rot(headC);
-    parts.push(ell('head', hc, [W * 0.84 * hw * sx, Hb * 0.3 * sy, L * 0.55], -tilt));
-    // ulls
-    const er = g.er * 1.05, ex = Math.min(W * g.eyeSpread, W * 0.72 * hw);
-    const small = g.eyeType === 'bead' || g.eyeType === 'dot';
-    const ey = hc[1] + Hb * 0.3 * sy * (small ? 0.45 : 0.72), ez = hc[2] + L * (small ? 0.42 : 0.3);
-    for (const sgn of [-1, 1]) parts.push(Object.assign(ell('eye', [sgn * ex, ey, ez], [er, er, er]), { side: sgn, eyeC: [sgn * ex, ey, ez], er }));
+
+    // --- tors (més estret amb coll o cintura; malucs amples si té forma de pera)
+    const tW = W * 0.9 * (neck ? 0.84 : 1) * (1 - g.waist * 0.45);
+    const tH = Hb * (neck ? 0.37 : round ? 0.47 : 0.42);
+    const tY = (neck ? Hb * 0.37 : round ? Hb * 0.46 : Hb * 0.4);
+    parts.push(ell('body', rot([0, tY * sy + lift, -L * 0.15]), [tW * sx, tH * sy, L * 0.95], -tilt));
+    if (g.taper > 0.12 && !neck) parts.push(ell('body', rot([0, Hb * 0.22 * sy + lift, -L * 0.28]), [W * (0.9 + g.taper * 0.6) * sx, Hb * 0.24 * sy, L * 0.85], -tilt));
+
+    // --- cap
+    const hR = [W * 0.84 * hw * sx * (round ? 1.06 : 1), Hb * (round ? 0.27 : 0.3) * (squareHead ? 0.86 : 1) * sy, L * (neck ? 0.5 : 0.55) * (squareHead ? 1.1 : 1)];
+    const hc = rot([0, (neck ? Hb * 0.72 : round ? Hb * 0.64 : Hb * 0.64) * sy + lift, L * (round ? 0.32 : 0.42)]);
+    parts.push(ell('head', hc, hR, -tilt));
+    const headTop = hc[1] + hR[1];
+    const onHead = (x, y, depthK) => {                    // z sobre la superfície del cap a (x, y)
+      const q = 1 - ((y - hc[1]) / hR[1]) ** 2 - (x / hR[0]) ** 2;
+      return hc[2] + hR[2] * Math.sqrt(Math.max(0.04, q)) * depthK;
+    };
+
+    // --- ulls: mida, separació i alçada del genoma
+    const t = g.eyeType, small = t === 'bead' || t === 'dot';
+    const er = g.er * (small ? 0.85 : t === 'knob' ? 0.85 : 1.05);
+    let ex = Math.min(W * g.eyeSpread, W * 0.74 * hw);
+    if (t === 'side' || t === 'crescent') ex = W * 0.8 * hw;
+    const ey = headTop - (g.eyeDrop + g.er * 0.3) * 0.9 + (t === 'knob' ? er * 0.6 : 0);
+    const ez = onHead(ex, Math.min(ey, headTop - 0.5), small ? 0.95 : t === 'side' || t === 'crescent' ? 0.45 : 0.62);
+    for (const sgn of [-1, 1]) {
+      const c = [sgn * ex, ey, ez];
+      if (t === 'knob') parts.push(ell('head', [sgn * ex, ey - er * 0.8, ez - er * 0.2], [er * 1.25, er * 1.0, er * 1.25]));
+      parts.push(Object.assign(ell('eye', c, [er, er, er]), { side: sgn, eyeC: c, er }));
+      if (t === 'toad' || t === 'hooded' || (g.brow && !small))                 // cella / parpella gruixuda
+        parts.push(ell('head', [sgn * ex, ey + er * 0.62, ez - er * 0.15], [er * 1.15, er * 0.5, er * 1.1]));
+      if (g.horns) parts.push(ell('head', [sgn * ex * 1.05, ey + er * 1.35, ez - er * 0.4], [0.95, er * 0.9, 0.95], -0.45));
+    }
     // sac vocal
     if (pose.puff) parts.push(ell('sac', [0, hc[1] - Hb * 0.22, hc[2] + L * 0.38], [2 + W * 0.25 * pose.puff, 1.5 + 2.5 * pose.puff, 2 + 2 * pose.puff]));
-    // potes posteriors
+
+    // --- potes posteriors
+    const footW = g.feet === 'webbed' ? 2.8 : 2;
+    const toes = (fx, fz) => {                            // dits llargs o ventoses a la punta del peu
+      if (g.feet === 'fingers') for (const j of [-1, 0, 1]) parts.push(ell('foot', [fx + j * 1.6, 0.7, fz], [0.6, 0.6, 1.9]));
+      if (g.feet === 'pads') for (const j of [-1, 0, 1]) parts.push(ell('pad', [fx + j * 1.5, 0.9, fz], [0.9, 0.9, 0.9]));
+    };
     if (legs === 'jump' || legs === 'spread') {
       // pota estirada: segment del maluc (que segueix el cos) fins al peu, sense trencar-se
       const back = legs === 'jump';
@@ -113,33 +149,41 @@ const Granota3D = (() => {
         const knee = back ? rot([sgn * W * 0.66, lift * 0.5 + Hb * 0.05, -L * 1.25]) : [sgn * W * 0.85, Hb * 0.18, -L * 0.95];
         const foot = back ? (pose.arms === 'down' ? [sgn * W * 0.66, 1, -L * 1.55] : [sgn * W * 0.66, lift * 0.35 + 1.5, -L * 1.75])
           : [sgn * W * 0.95, 1, -L * 0.6];
-        const r = Math.max(1.6, g.tw * 0.45);
+        const r = Math.max(1.5, g.tw * (g.thighs === 'bulky' ? 0.55 : 0.42));
         parts.push(seg('leg', hip, knee, r * 1.25));
         parts.push(seg('leg', knee, foot, r));
-        parts.push(ell('foot', [foot[0], foot[1], foot[2] - (back ? L * 0.2 : -L * 0.15)], [1.8, 1, L * 0.3]));
+        parts.push(ell('foot', [foot[0], foot[1], foot[2] - (back ? L * 0.2 : -L * 0.15)], [footW * 0.9, 1, L * 0.3]));
       }
     } else if (g.thighs !== 'hidden') {
       const k = legs === 'crouch' ? 1.15 : 1;
+      const bulky = g.thighs === 'bulky', slim = g.thighs === 'slim';
       for (const sgn of [-1, 1]) {
-        parts.push(ell('leg', [sgn * W * 0.78 * k, g.th * 0.85, -L * 0.45], [g.tw * 0.9 * k, g.th, L * 0.5]));
-        parts.push(ell('foot', [sgn * W * 0.92 * k, 0.9, -L * 0.02], [2, 0.9, L * 0.5]));
+        parts.push(ell('leg', [sgn * W * (bulky ? 0.82 : 0.76) * k, g.th * (bulky ? 0.9 : 0.85), -L * 0.45],
+          [g.tw * (bulky ? 1.02 : slim ? 0.72 : 0.85) * k, g.th * (bulky ? 1.05 : 0.95), L * (bulky ? 0.56 : 0.46)]));
+        if (!bulky) parts.push(ell('leg', [sgn * W * 0.9 * k, 1.5, -L * 0.18], [1.3, 1.3, L * 0.42]));   // canyella visible
+        const fz = -L * 0.02 + (slim ? L * 0.1 : 0);
+        parts.push(ell('foot', [sgn * W * 0.93 * k, 0.9, fz], [footW, 0.9, L * 0.5]));
+        toes(sgn * W * 0.93 * k, fz + L * 0.5);
       }
-    } else for (const sgn of [-1, 1]) parts.push(ell('foot', [sgn * W * 0.7, 0.9, -L * 0.1], [2, 0.9, L * 0.4]));
-    // braços i mans
+    } else for (const sgn of [-1, 1]) parts.push(ell('foot', [sgn * W * 0.7, 0.9, -L * 0.1], [footW, 0.9, L * 0.4]));
+
+    // --- braços i mans
     if (g.arms !== 'hidden' || legs !== 'sit') {
-      const aw = g.arms === 'stubby' ? 2 : 1.6;
+      const aw = g.arms === 'stubby' ? 2.1 : g.arms === 'long' ? 1.35 : 1.6;
+      const armH = g.arms === 'long' ? Hb * 0.27 : Hb * 0.2;
       const reach = pose.arms === 'reach', tuck = pose.arms === 'down' || pose.arms === 'out';
       for (const sgn of [-1, 1]) {
-        const ax = sgn * W * 0.55;
+        const ax = sgn * W * (neck ? 0.5 : 0.55);
         if (tuck) parts.push(ell('arm', rot([ax, lift + Hb * 0.25, L * 0.25]), [aw, aw, L * 0.4], 1.2));
         else {
           const hz = L * (reach ? 1.05 : 0.8), hy = reach ? lift * 0.3 + 1 : 0.8;
-          parts.push(ell('arm', [ax, (hy + Hb * 0.3 + lift) / 2, (hz + L * 0.55) / 2], [aw, Hb * 0.2 + lift * 0.3, aw * 1.1], reach ? 0.5 : 0.25));
+          parts.push(ell('arm', [ax, (hy + armH * 1.5 + lift) / 2 + armH * 0.2, (hz + L * 0.55) / 2], [aw, armH + lift * 0.3, aw * 1.1], reach ? 0.5 : 0.25));
           parts.push(ell('hand', [ax * 1.04, hy, hz], [2.2, 0.8, 2]));
+          if (g.arms === 'pads') for (const j of [-1, 0, 1]) parts.push(ell('pad', [ax * 1.04 + j * 1.3, 0.9, hz + 1.8], [0.8, 0.8, 0.8]));
         }
       }
     }
-    return { parts, W, Hb, L, hc, g, mouthY: hc[1] - Hb * 0.3 * sy * 0.25, headFront: hc[2] + L * 0.55 };
+    return { parts, W, Hb, L, hc, hR, g, eyeZ: ez, er, mouthY: hc[1] - hR[1] * 0.25, headFront: hc[2] + hR[2] };
   }
 
   function render(g, poseName, yaw) {
@@ -162,6 +206,17 @@ const Granota3D = (() => {
     const footHex = g.feetAccent ? g.accent : legHex;
     const bellyHex = (() => { const [h, s, l] = hexToHsl(g.belly); return l > 0.86 ? Granota.util.hslToHex(h, Math.max(s, 0.25), 0.84) : g.belly; })();
     const closed = pose.eyes === 'closed' || g.eyeType === 'happy' || g.eyeType === 'calm';
+    // panxa segons el tipus: de cara (pit i gola) i per sota (visible de perfil)
+    const bellyOn = g.bellyType !== 'none' && g.belly !== g.body;
+    const bellyAt = (p, n) => {
+      if (!bellyOn || p[1] > M.mouthY - 0.8) return false;
+      const frontal = n[2] > 0.25, ventral = n[1] < -0.25;
+      if (g.bellyType === 'chin') return frontal && p[1] > M.mouthY - M.Hb * 0.25 && Math.abs(p[0]) < M.W * 0.45;
+      if (!frontal && !ventral) return false;
+      const wf = g.bellyType === 'huge' ? 0.9 : g.bellyType === 'big' ? 0.8
+        : g.bellyType === 'bib' ? 0.78 * Math.max(0.3, Math.min(1, p[1] / Math.max(1, M.mouthY))) : 0.62;
+      return Math.abs(p[0]) < M.W * wf;
+    };
     const eyeF = sgn => norm([sgn * 0.45, 0.2, 0.87]);
     const HL = norm([-0.35, 0.6, 0.72]);
 
@@ -173,17 +228,22 @@ const Granota3D = (() => {
       const k = py * GW + px, e = M.parts[bi], p = best.p, n = best.n;
       depth[k] = best.t; pid[k] = bi;
       const nv = toView(n), ndl = dot(nv, LIGHT);
-      let c, l = ndl > 0.82 ? 1 : ndl < -0.15 ? -2 : ndl < 0.22 ? -1 : 0;
+      let c, l = ndl > 0.8 ? 1 : ndl < -0.35 ? -2 : ndl < 0.08 ? -1 : 0;
       if (e.part === 'body' || e.part === 'head') {
         c = g.body;
         const u = p[0] / M.W, v = (M.Hb * 0.5 - p[1]) / (M.Hb * 0.5);
-        const bellyOn = g.bellyType !== 'none' && g.belly !== g.body;
-        if (bellyOn && n[2] > 0.3 && n[1] < 0.35 && p[1] < M.mouthY - 1 && Math.abs(p[0]) < M.W * (g.bellyType === 'chin' ? 0.4 : 0.75)) c = bellyHex;
-        else { const pt = pattern(g, u, v, p, 'body'); if (pt.col) c = pt.col; l = Math.max(-2, Math.min(1, l + pt.dl)); }
-        // boca: línia al voltant del morro
-        if (e.part === 'head' && g.mouth !== 'none' && Math.abs(p[1] - M.mouthY) < 0.55 && n[2] > -0.1 && p[2] > M.hc[2]) {
-          c = pose.mouth === 'open' && n[2] > 0.5 ? g.mouthIn : g.outline; l = 0;
+        if (bellyAt(p, n)) {
+          c = bellyHex;
+          if (g.bellyType === 'ribbed' && Math.floor(p[1]) % 3 === 0) l = Math.min(l, -1);
+        } else { const pt = pattern(g, u, v, p, 'body'); if (pt.col) c = pt.col; l = Math.max(-2, Math.min(1, l + pt.dl)); }
+        // boca: línia del morro fins a sota l'ull, amb la forma del tipus de boca
+        if (e.part === 'head' && g.mouth !== 'none' && n[2] > -0.35 && p[2] > M.eyeZ - M.er * 0.6) {
+          const back = Math.max(0, Math.min(1, (M.headFront - p[2]) / Math.max(1, M.headFront - M.eyeZ)));
+          const off = { smile: 0.9, line: 0.4, frown: -0.7, droop: -0.9, chevron: -0.6 }[g.mouth] || 0;
+          const small = g.mouth === 'small' && Math.abs(p[0]) > 2.5;
+          if (!small && Math.abs(p[1] - (M.mouthY + off * back * back)) < 0.55) { c = pose.mouth === 'open' && n[2] > 0.5 ? g.mouthIn : g.outline; l = 0; }
         }
+        if (e.part === 'head' && g.cheeks && Math.abs(p[1] - (M.mouthY + 1.6)) < 0.9 && Math.abs(p[2] - M.eyeZ) < 1.6 && Math.abs(p[0]) > M.W * 0.45) { c = g.cheekColor; l = 0; }
         if (e.part === 'head' && g.nostrils && n[2] > 0.75 && n[1] > 0.25 && n[1] < 0.5 && Math.abs(Math.abs(p[0]) - 1.5) < 0.6) { c = g.outline; l = 0; }
       } else if (e.part === 'leg') {
         c = legHex;
@@ -191,6 +251,7 @@ const Granota3D = (() => {
       } else if (e.part === 'arm') c = legHex;
       else if (e.part === 'foot' || e.part === 'hand') { c = footHex; if (Math.abs((p[2] * 1.3) % 2) < 0.35 && n[1] > 0.3) { c = g.outline; l = 0; } }
       else if (e.part === 'sac') { c = variant(bellyHex, 1); l = Math.max(0, l); }
+      else if (e.part === 'pad') { c = variant(footHex, 1); l = 0; }
       else if (e.part === 'eye') {
         const m = norm([p[0] - e.eyeC[0], p[1] - e.eyeC[1], p[2] - e.eyeC[2]]);
         const f = eyeF(e.side), df = dot(m, f);
