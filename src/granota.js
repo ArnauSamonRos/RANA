@@ -328,20 +328,61 @@ function genome(seed) {
   return g;
 }
 
+function colorWord(hex) {
+  const [h, s, l] = hexToHsl(hex);
+  if (s < 0.14) return l < 0.3 ? 'negra' : l > 0.7 ? 'blanca' : 'grisa';
+  if (h < 14 || h >= 340) return l < 0.35 ? 'granat' : 'vermella';
+  if (h < 38) return l < 0.45 ? 'marró' : 'taronja';
+  if (h < 58) return l < 0.45 ? 'marró' : s < 0.45 ? 'terrosa' : 'groga';
+  if (h < 80) return s < 0.4 ? 'oliva' : 'llimona';
+  if (h < 160) return 'verda';
+  if (h < 200) return 'turquesa';
+  if (h < 260) return 'blava';
+  if (h < 300) return 'violeta';
+  return 'rosada';
+}
+
+const PAT_WORD = { spots: 'tacada', warts: 'berrugosa', speckle: 'pigallada', stripe: 'ratllada', lines: 'llistada', bands: 'tigrada', blotch: 'clapejada', mottle: 'jaspiada', mask: 'emmascarada', twotone: 'bicolor', chevron: 'ornada', freckle: 'pigosa' };
+
+// Trets llegibles d'un genoma: [clau, etiqueta]. Serveixen per aprendre el gust de l'usuari.
+function features(g) {
+  const f = [];
+  const add = (k, label) => f.push([k, label]);
+  const [, s, l] = hexToHsl(g.body);
+  add('arch:' + g.arch, 'tipus ' + g.arch);
+  add('pal:' + g.palette, 'paleta ' + g.palette);
+  add('col:' + colorWord(g.body), 'color ' + colorWord(g.body));
+  add('lum:' + (l < 0.35 ? 0 : l < 0.6 ? 1 : 2), 'to ' + (l < 0.35 ? 'fosc' : l < 0.6 ? 'mitjà' : 'clar'));
+  add('sat:' + (s < 0.3 ? 0 : s < 0.6 ? 1 : 2), 'color ' + (s < 0.3 ? 'apagat' : s < 0.6 ? 'suau' : 'viu'));
+  if (g.bellyType !== 'none') add('bcol:' + colorWord(g.belly), 'panxa ' + colorWord(g.belly));
+  add('belly:' + g.bellyType, { oval: 'panxa ovalada', big: 'panxa gran', chin: 'papada', ribbed: 'panxa estriada', none: 'sense panxa' }[g.bellyType]);
+  add('eye:' + g.eyeType, 'ulls ' + { bulge: 'sortints', toad: 'de gripau', white: 'blancs', bead: 'petits', dot: 'de punt' }[g.eyeType]);
+  const es = g.er / g.bw;
+  add('esz:' + (es < 0.2 ? 0 : es < 0.27 ? 1 : 2), 'ulls ' + (es < 0.2 ? 'petits' : es < 0.27 ? 'mitjans' : 'grans'));
+  add('pup:' + g.pupil, 'pupil·la ' + { round: 'rodona', horiz: 'horitzontal', vert: 'vertical', full: 'plena' }[g.pupil]);
+  add('iris:' + colorWord(g.iris), 'iris ' + colorWord(g.iris));
+  add('mouth:' + g.mouth, 'boca ' + { line: 'recta', smile: 'somrient', frown: 'trista', small: 'petita', open: 'oberta', none: 'invisible' }[g.mouth]);
+  add('arms:' + g.arms, 'braços ' + { thin: 'prims', stubby: 'grossos', pads: 'amb ventoses', hidden: 'amagats' }[g.arms]);
+  add('thigh:' + g.thighs, 'cuixes ' + { bulky: 'grosses', normal: 'normals', slim: 'primes', hidden: 'amagades' }[g.thighs]);
+  add('feet:' + g.feet, 'peus ' + { toes: 'amb dits', pads: 'amb ventoses', webbed: 'palmats' }[g.feet]);
+  if (!g.patterns.length) add('pat:none', 'sense patró');
+  for (const p of g.patterns) add('pat:' + p.type, 'patró ' + PAT_WORD[p.type]);
+  if (g.patterns.length) add('patc:' + g.patColor, 'patró ' + { dark: 'fosc', accent: 'de contrast', light: 'clar' }[g.patColor]);
+  const ratio = g.bh / (2 * g.bw);
+  add('ratio:' + (ratio < 0.8 ? 0 : ratio < 0.95 ? 1 : 2), 'cos ' + (ratio < 0.8 ? 'aplanat' : ratio < 0.95 ? 'equilibrat' : 'alt'));
+  add('size:' + (g.mass < 0.3 ? 0 : g.mass < 0.65 ? 1 : 2), 'mida ' + (g.mass < 0.3 ? 'petita' : g.mass < 0.65 ? 'mitjana' : 'grossa'));
+  add('head:' + (g.pTop < 2.2 ? 0 : 1), 'cap ' + (g.pTop < 2.2 ? 'rodó' : 'quadrat'));
+  add('taper:' + (g.taper > 0.22 ? 1 : 0), g.taper > 0.22 ? 'forma de pera' : 'forma recta');
+  if (g.horns) add('horns', 'banyes');
+  if (g.brow && g.eyeType !== 'toad') add('brow', 'celles');
+  if (g.cheeks) add('cheeks', 'galtes rosades');
+  if (g.nostrils) add('nost', 'narius');
+  return f;
+}
+
 function nameOf(g) {
-  const [h, s, l] = hexToHsl(g.body);
-  let c;
-  if (s < 0.14) c = l < 0.3 ? 'negra' : l > 0.7 ? 'blanca' : 'grisa';
-  else if (h < 14 || h >= 340) c = l < 0.35 ? 'granat' : 'vermella';
-  else if (h < 38) c = l < 0.45 ? 'marró' : 'taronja';
-  else if (h < 58) c = l < 0.45 ? 'marró' : s < 0.45 ? 'terrosa' : 'groga';
-  else if (h < 80) c = s < 0.4 ? 'oliva' : 'llimona';
-  else if (h < 160) c = 'verda';
-  else if (h < 200) c = 'turquesa';
-  else if (h < 260) c = 'blava';
-  else if (h < 300) c = 'violeta';
-  else c = 'rosada';
-  const pat = { spots: 'tacada', warts: 'berrugosa', speckle: 'pigallada', stripe: 'ratllada', lines: 'llistada', bands: 'tigrada', blotch: 'clapejada', mottle: 'jaspiada', mask: 'emmascarada', twotone: 'bicolor', chevron: 'ornada', freckle: 'pigosa' };
+  const c = colorWord(g.body);
+  const pat = PAT_WORD;
   const size = g.mass > 0.65 ? ' grossa' : g.mass < 0.12 ? ' petita' : '';
   const p = g.patterns.length ? ' ' + pat[g.patterns[0].type] : '';
   const eye = g.eyeType === 'white' ? ' ullerosa' : g.horns ? ' cornuda' : '';
@@ -709,5 +750,5 @@ function create(seed) {
   };
 }
 
-return { create, genome, GW, GH, G, CX, POSES };
+return { create, genome, features, GW, GH, G, CX, POSES };
 })();

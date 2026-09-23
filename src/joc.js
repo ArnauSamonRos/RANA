@@ -57,10 +57,10 @@ function drawFly(f, now) {
 
 // ---- Partícules (per l'aparició / desaparició) -----------------------------
 const puffs = [];
-function poof(x, y, n = 14) {
+function poof(x, y, n = 14, rgb = '200,200,205', up = 20) {
   for (let i = 0; i < n; i++) {
     const a = rand(0, Math.PI * 2), v = rand(20, 70) * S;
-    puffs.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.6 - 20 * S, t: 0, life: rand(0.35, 0.7), s: Math.ceil(rand(1, 3)) });
+    puffs.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.6 - up * S, t: 0, life: rand(0.35, 0.7), s: Math.ceil(rand(1, 3)), rgb });
   }
 }
 
@@ -88,6 +88,7 @@ function newFrog(seed, entrance = true) {
   location.replace('#' + seed.toString(16).padStart(8, '0'));
   document.getElementById('name').textContent = g.name;
   document.getElementById('seed').textContent = '#' + seed.toString(16).padStart(8, '0');
+  updateVoteUI();
 }
 
 function mouthWorld() {
@@ -342,7 +343,7 @@ function loop(now) {
   if (frog.tongue) drawTongue(frog.tongue);
   flies.filter(f => f.y >= frog.y - 30 * S || f.caught).forEach(f => drawFly(f, now));
   for (const p of puffs) {
-    ctx.fillStyle = `rgba(200,200,205,${1 - p.t / p.life})`;
+    ctx.fillStyle = `rgba(${p.rgb},${1 - p.t / p.life})`;
     const s = p.s * S;
     ctx.fillRect(Math.round(p.x / S) * S, Math.round(p.y / S) * S, s, s);
   }
@@ -351,13 +352,54 @@ function loop(now) {
 
 // ---- Interfície -------------------------------------------------------------------
 const randomSeed = () => (Math.random() * 4294967296) >>> 0;
-function restart() { flies.forEach(f => { if (f.caught) f.dead = true; }); newFrog(randomSeed()); }
+// Les granotes noves es trien segons el gust après (src/gust.js)
+function restart() { flies.forEach(f => { if (f.caught) f.dead = true; }); newFrog(Gust.next()); }
+
+// ---- M'agrada / No m'agrada ------------------------------------------------------
+function like() {
+  Gust.vote(frog.g.seed, 1);
+  if (Gust.voteOf(frog.g.seed) > 0) poof(frog.x, frog.y - 20 * S, 16, '240,110,140', 45);
+  updateVoteUI();
+}
+function dislike() {
+  Gust.vote(frog.g.seed, -1);
+  updateVoteUI();
+  if (Gust.voteOf(frog.g.seed) < 0) setTimeout(restart, 250);
+}
+function updateVoteUI() {
+  const v = Gust.voteOf(frog.g.seed);
+  document.getElementById('like').classList.toggle('on', v > 0);
+  document.getElementById('dislike').classList.toggle('on', v < 0);
+  const { L, D } = Gust.counts();
+  document.getElementById('learnBtn').textContent = L + D
+    ? `Après de ${L + D} vots (${L} 👍 · ${D} 👎) — què he après?`
+    : 'Vota 👍 / 👎 i aprendré quines granotes t\'agraden';
+  if (!document.getElementById('learnPanel').hidden) fillLearn();
+}
+function fillLearn() {
+  const { pos, neg } = Gust.insights();
+  const li = e => `<li>${e.label} <span>(${e.l}👍 ${e.d}👎)</span></li>`;
+  document.getElementById('pos').innerHTML = pos.map(li).join('') || '<li><span>encara res clar</span></li>';
+  document.getElementById('neg').innerHTML = neg.map(li).join('') || '<li><span>encara res clar</span></li>';
+}
+document.getElementById('like').addEventListener('click', like);
+document.getElementById('dislike').addEventListener('click', dislike);
+document.getElementById('learnBtn').addEventListener('click', () => {
+  const p = document.getElementById('learnPanel');
+  p.hidden = !p.hidden;
+  if (!p.hidden) fillLearn();
+});
+document.getElementById('forget').addEventListener('click', () => {
+  if (confirm('Esborrar tots els vots i començar a aprendre de zero?')) { Gust.reset(); updateVoteUI(); }
+});
 
 document.getElementById('restart').addEventListener('click', restart);
 cv.addEventListener('pointerdown', e => spawnFly(e.clientX, e.clientY));
 addEventListener('keydown', e => {
   if (e.key === 'r' || e.key === 'R') restart();
   if (e.key === 'g' || e.key === 'G') toggleGallery();
+  if (!galleryOpen && (e.key === 'm' || e.key === 'M')) like();
+  if (!galleryOpen && (e.key === 'n' || e.key === 'N')) dislike();
   if (e.key === 'Escape' && galleryOpen) toggleGallery();
 });
 
@@ -373,7 +415,7 @@ function fillGallery() {
   const grid = gal.querySelector('.grid');
   grid.innerHTML = '';
   for (let i = 0; i < 30; i++) {
-    const seed = randomSeed();
+    const seed = Gust.next();
     const f = Granota.create(seed);
     const fr = f.frame('idle');
     const c = document.createElement('canvas');
@@ -384,7 +426,21 @@ function fillGallery() {
     b.title = f.g.name;
     b.append(c);
     b.addEventListener('click', () => { toggleGallery(); newFrog(seed); });
-    grid.append(b);
+    // vots directes des de la galeria
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    const votes = document.createElement('div');
+    votes.className = 'votes';
+    for (const [v, txt, t] of [[-1, '👎', "No m'agrada"], [1, '👍', "M'agrada"]]) {
+      const vb = document.createElement('button');
+      vb.textContent = txt; vb.title = t;
+      const sync = () => vb.classList.toggle('on', Gust.voteOf(seed) === v);
+      vb.addEventListener('click', () => { Gust.vote(seed, v); cell.querySelectorAll('.votes button').forEach(x => x.sync()); updateVoteUI(); });
+      vb.sync = sync; sync();
+      votes.append(vb);
+    }
+    cell.append(b, votes);
+    grid.append(cell);
   }
 }
 document.getElementById('galleryBtn').addEventListener('click', toggleGallery);
@@ -393,5 +449,5 @@ document.getElementById('closeGal').addEventListener('click', toggleGallery);
 
 // Llavor des de l'URL (#xxxxxxxx) per poder compartir una granota concreta
 const fromHash = parseInt(location.hash.slice(1), 16);
-newFrog(Number.isFinite(fromHash) ? fromHash >>> 0 : randomSeed());
+newFrog(Number.isFinite(fromHash) ? fromHash >>> 0 : Gust.next());
 requestAnimationFrame(loop);

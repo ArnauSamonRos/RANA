@@ -7,6 +7,9 @@ Obre `index.html` al navegador (no cal servidor).
 
 - **↻ Nova granota** (dalt a la dreta, o tecla `R`): reinicia amb una granota nova i diferent.
 - **▦ Galeria** (tecla `G`): mostra 30 granotes aleatòries; clica'n una per adoptar-la.
+- **👍 / 👎** (tecles `M` / `N`): vota la granota. Amb 👎 en surt una altra de seguida.
+  També es pot votar des de la galeria.
+- **"Què he après?"** (a baix a l'esquerra): mostra quins trets t'agraden i quins no, i permet oblidar-ho tot.
 - **Clic a la pantalla**: deixa anar una mosca.
 - La llavor de la granota queda a l'URL (`#xxxxxxxx`): compartint l'enllaç es veu la mateixa granota.
 
@@ -35,5 +38,12 @@ Obre `index.html` al navegador (no cal servidor).
 - `src/joc.js` — comportament: salts parabòlics amb ombra, sèries de salts, salts llargs, raucar,
   migdiades i caça de mosques amb la llengua. La durada, l'alçada i la llargada dels salts depenen
   del pes i les potes de cada granota.
+
+- `src/gust.js` — aprenentatge del teu gust. Cada granota es descompon en trets (tipus, paleta,
+  color, to, ulls, pupil·la, boca, panxa, potes, patrons, proporcions, mida...). Els vots donen a
+  cada tret un pes (log-odds, tipus Naive Bayes). Per crear una granota nova es proven 60 llavors,
+  es puntuen i se'n tria una amb probabilitat proporcional a `exp(puntuació / 1.5)`; un 15% de les
+  granotes surten totalment a l'atzar per continuar explorant. Els vots es guarden al navegador
+  (`localStorage`), així que cada navegador té el seu propi gust après.
 
 `referencia/` conté les imatges originals que s'han fet servir com a referència.
