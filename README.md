@@ -21,8 +21,11 @@ Obre `index.html` al navegador (no cal servidor).
   arquetip (20%). La disposició és sempre coherent: ulls dins el cap, boca sota els ulls,
   panxa i braços per sota de la boca, braços per dins de les cuixes.
   - **Cos**: amplada, alçada, forma del cap i del ventre (superel·lipse amb eixamplament inferior).
-  - **Ulls**: sortints, de gripau (amb parpella), blancs amb pupil·la, petits encastats o punts;
-    iris de diversos colors i pupil·la rodona, horitzontal, vertical o plena; celles i banyes opcionals.
+  - **Ulls** (inspirats en la referència): sortints, als costats, sobre bonys, de gripau (parpella plana),
+    endormiscats (parpella pesada), blancs amb pupil·la, contents (tancats en arc, amb o sense sòcol),
+    petits encastats o de punt. Pupil·la rodona, horitzontal, vertical, plena, brillant, en anella o de punt;
+    iris de diversos colors; parpella del color del cos, clara, rosada o de contrast; celles planes o
+    enfadades (inclinades); banyes opcionals.
   - **Boca**: línia, somriure, trista, petita o sense (mai oberta); narius i galtes opcionals.
   - **Panxa**: oval, gran, papada, estriada o sense.
   - **Potes**: braços prims, grossos, amb ventoses o amagats; cuixes grosses, normals, primes o amagades;
