@@ -24,7 +24,14 @@
   #gallery .grid button { background: none; border: 2px solid transparent; padding: 0; cursor: pointer; }
   #gallery .grid button:hover { border-color: #2a2230; }
   #gallery .grid canvas { width: 100%; image-rendering: pixelated; display: block; }
-  #votebar { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; gap: 28px; }
+  #rate { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 14px; width: max-content; max-width: calc(100vw - 32px); }
+  #parts { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+  #parts button { font: inherit; font-size: 13px; padding: 5px 10px; cursor: pointer; color: #2a2230; background: #fff; border: 2px solid #2a2230; box-shadow: 2px 2px 0 #2a2230; }
+  #parts button.up { background: #d6f0c2; }
+  #parts button.down { background: #f6cfcf; }
+  #votebar { display: flex; gap: 28px; align-items: center; }
+  #partsOnly { font-size: 16px; padding: 12px 16px; }
+  #partsOnly[hidden] { display: none; }
   #votebar button.vote { font-size: 38px; line-height: 1; padding: 14px 36px; border-width: 4px; box-shadow: 5px 5px 0 #2a2230; }
   #votebar button.vote:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 #2a2230; }
   #votebar button.vote:disabled { opacity: .5; cursor: default; }
@@ -33,16 +40,21 @@
   button.link { font: inherit; background: none; border: 0; padding: 0; cursor: pointer; color: #2a2230; text-decoration: underline; text-underline-offset: 3px; }
   #learnPanel { margin-top: 8px; background: #fff; border: 3px solid #2a2230; box-shadow: 3px 3px 0 #2a2230; padding: 10px 12px; }
   #learnPanel[hidden] { display: none; }
-  #learnPanel .cols { display: flex; gap: 24px; flex-wrap: wrap; }
-  #learnPanel ul { margin: 6px 0 10px; padding-left: 18px; min-width: 150px; }
-  #learnPanel li span { opacity: .5; }
+  #learnPanel { max-height: calc(100vh - 330px); overflow: auto; }
+  #learnBody table { border-collapse: collapse; margin-bottom: 10px; }
+  #learnBody td { padding: 2px 10px 2px 0; vertical-align: top; }
+  #learnBody td:first-child { font-weight: bold; }
+  #learnBody .n { opacity: .45; }
+  #learnBody .up { color: #2f7a1f; }
+  #learnBody .down { color: #b02a2a; }
+  #learnBody h4 { margin: 8px 0 4px; font-size: 13px; }
   #learnPanel .actions { display: flex; gap: 16px; flex-wrap: wrap; }
   #learnPanel p { margin: 8px 0 0; opacity: .6; }
   #gallery .cell { display: flex; flex-direction: column; align-items: stretch; }
   #gallery .cell .votes { display: flex; justify-content: center; gap: 6px; }
   #gallery .cell .votes button { font-size: 13px; padding: 2px 8px; border: 2px solid #2a2230; background: #fff; cursor: pointer; }
   #gallery .cell .votes button.on { background: #2a2230; }
-  @media (max-width: 520px) { #info { top: 64px; } #learn { top: 104px; } #votebar button.vote { font-size: 30px; padding: 12px 28px; } }
+  @media (max-width: 520px) { #info { top: 64px; } #learn { top: 104px; } #votebar button.vote { font-size: 30px; padding: 12px 24px; } #votebar { gap: 16px; } }
 </style>
 </head>
 <body>
@@ -52,14 +64,18 @@
   <button id="galleryBtn" class="px" title="Galeria (G)">▦ Galeria</button>
   <button id="restart" class="px" title="Nova granota (R)">↻ Nova granota</button>
 </div>
-<div id="votebar">
-  <button id="dislike" class="px vote" title="No m'agrada (N)">👎</button>
-  <button id="like" class="px vote" title="M'agrada (M)">👍</button>
+<div id="rate">
+  <div id="parts" title="Valora cada part per separat (tecles 1-7): clic = 👍, un altre clic = 👎, un altre = res"></div>
+  <div id="votebar">
+    <button id="dislike" class="px vote" title="No m'agrada (N)">👎</button>
+    <button id="partsOnly" class="px" title="Guarda només la valoració de les parts i passa a la següent (Enter)" hidden>Següent ➜</button>
+    <button id="like" class="px vote" title="M'agrada (M)">👍</button>
+  </div>
 </div>
 <div id="learn">
   <button id="learnBtn" class="link"></button>
   <div id="learnPanel" hidden>
-    <div class="cols"><div><b>T'agrada</b><ul id="pos"></ul></div><div><b>No t'agrada</b><ul id="neg"></ul></div></div>
+    <div id="learnBody"></div>
     <div class="actions">
       <button id="exportBtn" class="link" title="Descarrega els teus vots en un fitxer">⬇ Exporta els vots</button>
       <button id="importBtn" class="link" title="Carrega vots d'un fitxer">⬆ Importa vots</button>
@@ -77,6 +93,7 @@
   <div class="grid"></div>
 </div>
 <script src="src/granota.js"></script>
+<script src="src/aprenentatge.js"></script>
 <script src="src/model.js"></script>
 <script src="src/gust.js"></script>
 <script src="src/joc.js"></script>

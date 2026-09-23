@@ -9,6 +9,9 @@ Obre `index.html` al navegador (no cal servidor).
 - **▦ Galeria** (tecla `G`): mostra 30 granotes aleatòries; clica'n una per adoptar-la.
 - **👍 / 👎** (botons grans a baix al centre, o tecles `M` / `N`): vota la granota i passa
   automàticament a la següent. També es pot votar des de la galeria.
+- **Valoració per parts** (botons Cos, Colors, Ulls, Boca, Panxa, Potes, Patró, o tecles `1`–`7`):
+  cada clic canvia entre 👍, 👎 i res. Les parts marcades manen sobre el vot global; per exemple,
+  Ulls 👍 + Boca 👍 + Potes 👎. Es pot enviar amb 👍/👎 o, només amb les parts, amb **Següent ➜** (`Enter`).
 - **"Què he après?"** (a dalt a l'esquerra, sota el nom): mostra quins trets t'agraden i quins no,
   i permet **exportar** / **importar** els vots en un fitxer.
 
@@ -54,6 +57,10 @@ encara que el generador canviï.
   migdiades i caça de mosques amb la llengua. La durada, l'alçada i la llargada dels salts depenen
   del pes i les potes de cada granota.
 
+- `src/aprenentatge.js` — com es converteix un vot en comptes (compartit per la pàgina i l'script):
+  cada tret pertany a una part i rep la valoració d'aquella part (o la global). A més es compten les
+  **combinacions** entre els trets principals de parts diferents (p. ex. "ulls contents + boca somrient"):
+  positiva si les dues parts agraden, negativa si alguna no.
 - `src/gust.js` — aprenentatge del teu gust. Cada granota es descompon en trets (tipus, paleta,
   color, to, ulls, pupil·la, boca, panxa, potes, patrons, proporcions, mida...). Els vots donen a
   cada tret un pes (log-odds, tipus Naive Bayes). Per crear una granota nova es proven 60 llavors,

@@ -21,7 +21,7 @@ resize();
 const rand = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-const bounds = () => ({ x0: 32 * S, x1: W - 32 * S, y0: 64 * S, y1: H - Math.max(6 * S, 110) });
+const bounds = () => ({ x0: 32 * S, x1: W - 32 * S, y0: 64 * S, y1: H - Math.max(6 * S, 175) });
 
 // ---- Mosques ---------------------------------------------------------------
 const flies = [];
@@ -88,6 +88,7 @@ function newFrog(seed, entrance = true) {
   location.replace('#' + seed.toString(16).padStart(8, '0'));
   document.getElementById('name').textContent = g.name;
   document.getElementById('seed').textContent = '#' + seed.toString(16).padStart(8, '0');
+  resetParts();
   updateVoteUI();
 }
 
@@ -360,40 +361,81 @@ function restart() { flies.forEach(f => { if (f.caught) f.dead = true; }); newFr
 let voting = false;
 function vote(v) {
   if (voting || galleryOpen) return;
+  const parts = Object.assign({}, partState);
+  if (!v && !Object.keys(parts).length) return;
   voting = true;
-  Gust.vote(frog.g.seed, v);
-  if (Gust.voteOf(frog.g.seed) !== v) Gust.vote(frog.g.seed, v);   // si ja estava votada, no l'anul·lis
+  Gust.vote(frog.g.seed, v, parts);
+  if (!Object.keys(parts).length && Gust.voteOf(frog.g.seed) !== v) Gust.vote(frog.g.seed, v);   // si ja estava votada, no l'anul·lis
   updateVoteUI();
-  if (v > 0) poof(frog.x, frog.y - 20 * S, 16, '240,110,140', 45);
-  document.querySelectorAll('#votebar button').forEach(b => { b.disabled = true; });
+  const good = v > 0 || (!v && Object.values(parts).some(x => x > 0));
+  if (good) poof(frog.x, frog.y - 20 * S, 16, '240,110,140', 45);
+  document.querySelectorAll('#rate button').forEach(b => { b.disabled = true; });
   setTimeout(() => {
     restart();
     voting = false;
-    document.querySelectorAll('#votebar button').forEach(b => { b.disabled = false; });
-  }, v > 0 ? 450 : 250);
+    document.querySelectorAll('#rate button').forEach(b => { b.disabled = false; });
+  }, good ? 450 : 250);
 }
 const like = () => vote(1), dislike = () => vote(-1);
+
+// ---- Valoració per parts ---------------------------------------------------------
+// Cada part (cos, colors, ulls, boca, panxa, potes, patró) es pot marcar amb
+// 👍 o 👎. Les parts marcades manen sobre la valoració global.
+let partState = {};
+const partsEl = document.getElementById('parts');
+for (const [i, p] of Aprenentatge.PARTS.entries()) {
+  const b = document.createElement('button');
+  b.dataset.part = p.id;
+  b.title = `${p.label} (tecla ${i + 1})`;
+  b.addEventListener('click', () => cyclePart(p.id));
+  partsEl.append(b);
+}
+function cyclePart(id) {
+  const cur = partState[id] || 0;
+  const nxt = cur === 0 ? 1 : cur === 1 ? -1 : 0;
+  if (nxt) partState[id] = nxt; else delete partState[id];
+  renderParts();
+}
+function renderParts() {
+  for (const b of partsEl.children) {
+    const p = Aprenentatge.PARTS.find(x => x.id === b.dataset.part);
+    const s = partState[p.id] || 0;
+    b.textContent = p.label + (s > 0 ? ' 👍' : s < 0 ? ' 👎' : '');
+    b.className = s > 0 ? 'up' : s < 0 ? 'down' : '';
+  }
+  document.getElementById('partsOnly').hidden = !Object.keys(partState).length;
+}
+function resetParts() { partState = {}; renderParts(); }
+
 function updateVoteUI() {
+  if (!partsEl.children.length) return;
   const v = Gust.voteOf(frog.g.seed);
   document.getElementById('like').classList.toggle('on', v > 0);
   document.getElementById('dislike').classList.toggle('on', v < 0);
-  const { L, D, local, base } = Gust.counts();
-  document.getElementById('learnBtn').textContent = L + D
-    ? `Après de ${L + D} vots (${L} 👍 · ${D} 👎) — què he après?`
-    : 'Vota 👍 / 👎 i aprendré quines granotes t\'agraden';
+  const { L, D, P, local, base } = Gust.counts();
+  const n = L + D + P + base;
+  document.getElementById('learnBtn').textContent = n
+    ? `Après de ${n} vots — què he après?`
+    : 'Vota 👍 / 👎 (o per parts) i aprendré quines granotes t\'agraden';
   document.getElementById('baseInfo').textContent =
-    `${base} vots consolidats al projecte + ${local} en aquest navegador. ` +
+    `${base} vots consolidats al projecte + ${local} en aquest navegador (${L} 👍 · ${D} 👎 · ${P} només per parts). ` +
     'Exporta els vots per incorporar-los al model base.';
   if (!document.getElementById('learnPanel').hidden) fillLearn();
 }
 function fillLearn() {
-  const { pos, neg } = Gust.insights();
-  const li = e => `<li>${e.label} <span>(${e.l}👍 ${e.d}👎)</span></li>`;
-  document.getElementById('pos').innerHTML = pos.map(li).join('') || '<li><span>encara res clar</span></li>';
-  document.getElementById('neg').innerHTML = neg.map(li).join('') || '<li><span>encara res clar</span></li>';
+  const ins = Gust.insights();
+  const item = (e, cls) => `<span class="${cls}">${e.label}</span> <span class="n">(${e.l}👍 ${e.d}👎)</span>`;
+  const rows = ins.parts.map(p => {
+    const cells = [...p.pos.map(e => item(e, 'up')), ...p.neg.map(e => item(e, 'down'))];
+    return `<tr><td>${p.label}</td><td>${cells.join(' · ') || '<span class="n">encara res clar</span>'}</td></tr>`;
+  }).join('');
+  const pairs = [...ins.pairsPos.map(e => item(e, 'up')), ...ins.pairsNeg.map(e => item(e, 'down'))];
+  document.getElementById('learnBody').innerHTML =
+    `<table>${rows}</table><h4>Combinacions</h4><div>${pairs.join('<br>') || '<span class="n">encara res clar</span>'}</div><br>`;
 }
 document.getElementById('like').addEventListener('click', like);
 document.getElementById('dislike').addEventListener('click', dislike);
+document.getElementById('partsOnly').addEventListener('click', () => vote(0));
 document.getElementById('learnBtn').addEventListener('click', () => {
   const p = document.getElementById('learnPanel');
   p.hidden = !p.hidden;
@@ -417,6 +459,21 @@ document.getElementById('importFile').addEventListener('change', async e => {
   catch (err) { alert('No s\'ha pogut importar: ' + err.message); }
   e.target.value = '';
   updateVoteUI();
+});
+
+document.getElementById('restart').addEventListener('click', restart);
+cv.addEventListener('pointerdown', e => spawnFly(e.clientX, e.clientY));
+addEventListener('keydown', e => {
+  if (e.target instanceof HTMLInputElement) return;
+  if (e.key === 'r' || e.key === 'R') restart();
+  if (e.key === 'g' || e.key === 'G') toggleGallery();
+  if (e.key === 'Escape' && galleryOpen) toggleGallery();
+  if (galleryOpen) return;
+  if (e.key === 'm' || e.key === 'M') like();
+  if (e.key === 'n' || e.key === 'N') dislike();
+  if (e.key === 'Enter' && Object.keys(partState).length) { e.preventDefault(); vote(0); }
+  const i = Number(e.key) - 1;
+  if (Number.isInteger(i) && i >= 0 && i < Aprenentatge.PARTS.length) cyclePart(Aprenentatge.PARTS[i].id);
 });
 
 // Galeria: mostra moltes granotes alhora; clic per adoptar-ne una
