@@ -536,17 +536,20 @@ function render(g, poseName, lookX = 0, lookY = 0) {
 
   // Ulls: posició (dins l'amplada del cap i sense tocar-se)
   const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
-  const er = g.er;
+  let er = g.er;
   let eyeDX = clampN(bodyW * g.eyeSpread, er + 1.2, Math.max(er + 1.2, g.eyeType === 'side' ? bodyW - er * 0.4 : g.eyeType === 'crescent' ? bodyW - er * 0.3 : bodyW * 0.9 - er));
   const eyeY = top + g.eyeDrop + er * 0.3;
   const small = g.eyeType === 'bead' || g.eyeType === 'dot';
-  if (small) {                                   // els ulls encastats queden sempre dins del cap
-    let half = 0;
-    for (const yy of [eyeY - er, eyeY, eyeY + er]) {
-      let hw = 0; while (hw < bodyW + 2 && bodyMask(CX + hw + 0.5, yy)) hw++;
-      half = half ? Math.min(half, hw) : hw;
-    }
-    eyeDX = Math.max(er + 1, Math.min(eyeDX, half - er - (g.beadStyle === 'moon' ? 2.2 : 1.4)));
+  // Els ulls mai surten del cos pels costats: el sòcol ha de cabre dins l'amplada del cap
+  // a l'alçada dels ulls (per als que sobresurten per dalt, just per sota del cim).
+  {
+    const halfAt = yy => { let hw = 0; while (hw < bodyW + 2 && bodyMask(CX + hw + 0.5, yy)) hw++; return hw; };
+    const rows = small ? [eyeY - er, eyeY, eyeY + er] : [Math.max(eyeY, top + er * 0.9), Math.max(eyeY + er * 0.6, top + er * 1.4)];
+    const half = Math.min(...rows.map(halfAt));
+    const extra = small ? (g.beadStyle === 'moon' ? 2.2 : g.beadStyle === 'red' ? 1.8 : 1.4)
+      : g.eyeType === 'calm' ? 1.7 : g.eyeType === 'happy' ? 1.2 : g.eyeType === 'crescent' ? 1.1 : 1.4;
+    er = Math.max(1, Math.min(er, (half - 1.2 - extra) / 2));        // si el cap és estret, ulls més petits
+    eyeDX = Math.max(er + 1.2, Math.min(eyeDX, half - er - extra));
   }
   const eyes = [CX - eyeDX, CX + eyeDX];
 
