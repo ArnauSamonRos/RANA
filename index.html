@@ -1,302 +1,47 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="ca">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rana</title>
+<title>Granotes</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #fff; overflow: hidden; }
-  canvas { display: block; image-rendering: pixelated; cursor: crosshair; }
+  html, body { margin: 0; height: 100%; background: #fff; overflow: hidden; font-family: ui-monospace, Menlo, Consolas, monospace; color: #2a2230; }
+  canvas#c { display: block; image-rendering: pixelated; cursor: crosshair; touch-action: none; }
+  .hud { position: fixed; top: 12px; display: flex; gap: 8px; align-items: center; }
+  #info { left: 16px; font-size: 13px; line-height: 1.4; pointer-events: none; }
+  #info #seed { opacity: .5; }
+  #buttons { right: 16px; }
+  button.px {
+    font: inherit; font-size: 14px; padding: 8px 12px; cursor: pointer; color: #2a2230;
+    background: #fff; border: 3px solid #2a2230; box-shadow: 3px 3px 0 #2a2230;
+  }
+  button.px:hover { background: #f1f7e8; }
+  button.px:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #2a2230; }
+  #gallery { position: fixed; inset: 0; background: rgba(255,255,255,.97); overflow: auto; padding: 64px 16px 24px; box-sizing: border-box; }
+  #gallery[hidden] { display: none; }
+  #gallery .bar { position: fixed; top: 12px; right: 16px; display: flex; gap: 8px; }
+  #gallery .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; max-width: 1100px; margin: 0 auto; }
+  #gallery .grid button { background: none; border: 2px solid transparent; padding: 0; cursor: pointer; }
+  #gallery .grid button:hover { border-color: #2a2230; }
+  #gallery .grid canvas { width: 100%; image-rendering: pixelated; display: block; }
+  @media (max-width: 520px) { #info { top: 64px; } }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-<script>
-'use strict';
-
-// ---- Spritesheet ---------------------------------------------------------
-// 9x6 celdas de 64px. La rana mira a la IZQUIERDA en la hoja.
-// Punto de anclaje (patas) dentro de cada celda:
-const CELL = 64, AX = 49, AY = 61;
-// Punta de la lengua respecto al anclaje (lengua extendida / recogiéndose)
-const TONGUE_TIP = { dx: -47, dy: -11 };
-const TONGUE_RETRACT = { dx: -34, dy: -14 };
-
-const F = {
-  idleA:   [0, 0], idleB:   [0, 1],
-  puff1:   [2, 0], puff2:   [2, 1],          // garganta hinchándose / parpadeo
-  tongue:  [0, 3], retract: [0, 4],
-  takeoff: [1, 3], rise:    [1, 4],
-  glide:   [4, 0], fall:    [5, 0],
-  leapUp:  [5, 1], leapTop: [0, 7],
-};
-
-const sheet = new Image();
-sheet.src = 'assets/frog_sheet.png';
-
-// ---- Canvas --------------------------------------------------------------
-const cv = document.getElementById('c');
-const ctx = cv.getContext('2d');
-let W, H, S;
-function resize() {
-  W = cv.width = innerWidth;
-  H = cv.height = innerHeight;
-  S = Math.max(2, Math.round(Math.min(W, H) / 180));
-  ctx.imageSmoothingEnabled = false;
-}
-addEventListener('resize', resize);
-resize();
-
-const rand = (a, b) => a + Math.random() * (b - a);
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const easeInOut = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-
-// ---- Moscas --------------------------------------------------------------
-const flies = [];
-function spawnFly(x, y) {
-  const m = 40 * S;
-  flies.push({
-    x: x ?? rand(m, W - m), y: y ?? rand(m + 30 * S, H - m),
-    hx: 0, hy: 0, vx: 0, vy: 0, t: rand(0, 10), caught: false, dead: false,
-  });
-  const f = flies[flies.length - 1];
-  f.hx = f.x; f.hy = f.y;
-}
-function updateFly(f, dt) {
-  if (f.caught) return;
-  f.t += dt;
-  // el "hogar" deriva lentamente; la mosca zumba alrededor
-  f.hx = clamp(f.hx + Math.sin(f.t * 0.37) * 18 * S * dt, 30 * S, W - 30 * S);
-  f.hy = clamp(f.hy + Math.cos(f.t * 0.29) * 12 * S * dt, 40 * S, H - 20 * S);
-  const ax = (f.hx - f.x) * 3 + rand(-1, 1) * 260 * S;
-  const ay = (f.hy - f.y) * 3 + rand(-1, 1) * 260 * S;
-  f.vx = (f.vx + ax * dt) * 0.9;
-  f.vy = (f.vy + ay * dt) * 0.9;
-  f.x += f.vx * dt; f.y += f.vy * dt;
-}
-function drawFly(f, now) {
-  const x = Math.round(f.x / S) * S, y = Math.round(f.y / S) * S;
-  ctx.fillStyle = '#c9d6e3';
-  const up = Math.floor(now / 40) % 2;
-  ctx.fillRect(x - 2 * S, y - (up ? 2 : 1) * S, S, S);
-  ctx.fillRect(x + S, y - (up ? 2 : 1) * S, S, S);
-  ctx.fillStyle = '#2b2530';
-  ctx.fillRect(x - S, y - S, 2 * S, 2 * S);
-}
-
-// ---- Rana ----------------------------------------------------------------
-const frog = {
-  x: 0, y: 0, face: -1,       // face -1 = izquierda (como en la hoja), 1 = derecha
-  lift: 0, frame: F.idleA,
-  act: null, prey: null,
-};
-frog.x = innerWidth / 2; frog.y = innerHeight / 2;
-
-// punta de la lengua en coordenadas de pantalla
-function tongueWorld(tip) {
-  return { x: frog.x - frog.face * tip.dx * S, y: frog.y + tip.dy * S };
-}
-
-// Acciones: cada una es una función (t, dt) => terminó?
-function actIdle(dur) {
-  let blinkAt = rand(0.3, 1) * dur;
-  return { name: 'idle', dur, run(t) {
-    frog.lift = 0;
-    const tb = t - blinkAt;
-    if (tb > 0 && tb < 0.45) frog.frame = tb < 0.1 || tb > 0.35 ? F.puff1 : F.puff2;
-    else frog.frame = Math.floor(t / 0.55) % 2 ? F.idleB : F.idleA;
-    return t >= dur;
-  } };
-}
-
-function actCroak() {
-  const seq = [F.puff1, F.puff2, F.puff1, F.idleA, F.puff1, F.puff2, F.puff1];
-  const step = 0.13;
-  return { name: 'croak', run(t) {
-    frog.lift = 0;
-    const i = Math.floor(t / step);
-    frog.frame = seq[Math.min(i, seq.length - 1)];
-    return i >= seq.length;
-  } };
-}
-
-function actHop(tx, ty, big) {
-  const x0 = frog.x, y0 = frog.y;
-  tx = clamp(tx, 40 * S, W - 20 * S);
-  ty = clamp(ty, 50 * S, H - 8 * S);
-  const dist = Math.hypot(tx - x0, ty - y0);
-  const height = big ? rand(34, 44) * S : clamp(dist * 0.45, 8 * S, 24 * S);
-  const air = big ? 0.75 : clamp(0.26 + dist / (S * 260), 0.3, 0.5);
-  const crouch = 0.09, landT = 0.12;
-  if (Math.abs(tx - x0) > 2) frog.face = tx > x0 ? 1 : -1;
-  return { name: 'hop', run(t) {
-    if (t < crouch) { frog.frame = F.puff1; frog.lift = 0; return false; }
-    const u = (t - crouch) / air;
-    if (u < 1) {
-      const e = easeInOut(u);
-      frog.x = x0 + (tx - x0) * e;
-      frog.y = y0 + (ty - y0) * e;
-      frog.lift = 4 * height * u * (1 - u);
-      if (big) frog.frame = u < 0.12 ? F.takeoff : u < 0.4 ? F.leapUp : u < 0.62 ? F.leapTop : u < 0.9 ? F.glide : F.fall;
-      else     frog.frame = u < 0.2  ? F.takeoff : u < 0.55 ? F.rise   : u < 0.88 ? F.glide : F.takeoff;
-      return false;
-    }
-    frog.x = tx; frog.y = ty; frog.lift = 0;
-    frog.frame = F.puff1;               // pequeño "aterrizaje"
-    return t >= crouch + air + landT;
-  } };
-}
-
-function actTurn() {
-  return { name: 'turn', run(t) {
-    frog.frame = F.idleA; frog.lift = 0;
-    if (t > 0.08 && !this.done) { frog.face *= -1; this.done = true; }
-    return t > 0.22;
-  } };
-}
-
-function actTongue(fly) {
-  return { name: 'tongue', run(t) {
-    frog.lift = 0;
-    if (t < 0.16) {
-      frog.frame = F.tongue;
-      if (fly && !fly.caught) {
-        const tip = tongueWorld(TONGUE_TIP);
-        if (Math.hypot(fly.x - tip.x, fly.y - tip.y) < 12 * S) fly.caught = true;
-      }
-      if (fly && fly.caught) Object.assign(fly, tongueWorld(TONGUE_TIP));
-      return false;
-    }
-    if (t < 0.3) {
-      frog.frame = F.retract;
-      if (fly && fly.caught) Object.assign(fly, tongueWorld(TONGUE_RETRACT));
-      return false;
-    }
-    if (fly && fly.caught) fly.dead = true;
-    frog.frame = F.idleA;
-    return t > 0.42;
-  } };
-}
-
-// ---- Cerebro -------------------------------------------------------------
-let plan = [];
-function think() {
-  if (plan.length) return plan.shift();
-
-  // ¿Hay moscas? cazar la más cercana
-  const live = flies.filter(f => !f.caught && !f.dead);
-  if (live.length) {
-    let fly = live.reduce((a, b) =>
-      Math.hypot(a.x - frog.x, a.y - frog.y) < Math.hypot(b.x - frog.x, b.y - frog.y) ? a : b);
-    const side = fly.x >= frog.x ? 1 : -1;
-    // posición ideal: mosca justo en la punta de la lengua
-    const gx = fly.x - side * -TONGUE_TIP.dx * S;
-    const gy = fly.y - TONGUE_TIP.dy * S;
-    const tip = tongueWorld(TONGUE_TIP);
-    const dTip = Math.hypot(fly.x - tip.x, fly.y - tip.y);
-
-    if (side === frog.face && dTip < 10 * S) return actTongue(fly);
-    const dx = gx - frog.x, dy = gy - frog.y, d = Math.hypot(dx, dy);
-    if (d < 8 * S) {
-      if (side !== frog.face) return actTurn();
-      return actIdle(rand(0.1, 0.3));  // esperar a que la mosca se ponga a tiro
-    }
-    // saltar hacia la posición ideal, a pasos de rana
-    const big = d > 140 * S && Math.random() < 0.3;
-    const step = Math.min(d, (big ? rand(70, 95) : rand(28, 46)) * S);
-    const hop = actHop(frog.x + dx / d * step, frog.y + dy / d * step, big);
-    plan.push(actIdle(rand(0.15, 0.45)));
-    // tras un salto de retroceso, volverse hacia la mosca
-    if (Math.sign(dx) !== side && Math.abs(dx) > 2) plan.push(actTurn());
-    return hop;
-  }
-
-  // Sin moscas: vagar con naturalidad
-  const r = Math.random();
-  if (r < 0.40) return actIdle(rand(1.0, 3.2));
-  if (r < 0.55) return actCroak();
-  if (r < 0.62) return actTurn();
-  if (r < 0.67) { plan.push(actIdle(rand(0.6, 1.2))); return actTongue(null); }
-  if (r < 0.75) {
-    const ang = rand(-0.5, 0.5) + (frog.face < 0 ? Math.PI : 0);
-    const d = rand(70, 100) * S;
-    plan.push(actIdle(rand(0.6, 1.4)));
-    return actHop(frog.x + Math.cos(ang) * d, frog.y + Math.sin(ang) * d * 0.5, true);
-  }
-  // serie de saltitos en una dirección
-  const dir = Math.random() < 0.7 ? frog.face : -frog.face;   // casi siempre hacia delante
-  let ang = rand(-0.6, 0.6) + (dir < 0 ? Math.PI : 0);
-  const n = 2 + Math.floor(Math.random() * 3);
-  let x = frog.x, y = frog.y;
-  for (let i = 0; i < n; i++) {
-    const d = rand(24, 40) * S;
-    let nx = x + Math.cos(ang) * d, ny = y + Math.sin(ang) * d * 0.6;
-    if (nx < 50 * S || nx > W - 30 * S) { ang = Math.PI - ang; nx = x + Math.cos(ang) * d; }
-    if (ny < 60 * S || ny > H - 10 * S) { ang = -ang; ny = y + Math.sin(ang) * d * 0.6; }
-    x = nx; y = ny;
-    plan.push({ lazy: [x, y] }, actIdle(rand(0.08, 0.3)));
-  }
-  plan.push(actIdle(rand(0.8, 2)));
-  return actIdle(0.01);
-}
-
-function nextAction() {
-  let a = think();
-  if (a.lazy) a = actHop(a.lazy[0], a.lazy[1], false);
-  a.t = 0;
-  frog.act = a;
-}
-
-// ---- Dibujo --------------------------------------------------------------
-function drawFrog() {
-  const [r, c] = frog.frame;
-  // sombra
-  const k = 1 - clamp(frog.lift / (45 * S), 0, 0.6);
-  ctx.fillStyle = 'rgba(0,0,0,0.12)';
-  ctx.beginPath();
-  ctx.ellipse(Math.round(frog.x), Math.round(frog.y + S), 14 * S * k, 3 * S * k, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.save();
-  ctx.translate(Math.round(frog.x / S) * S, Math.round((frog.y - frog.lift) / S) * S);
-  ctx.scale(frog.face === 1 ? -1 : 1, 1);   // la hoja mira a la izquierda
-  ctx.drawImage(sheet, c * CELL, r * CELL, CELL, CELL, -AX * S, -AY * S, CELL * S, CELL * S);
-  ctx.restore();
-}
-
-// ---- Bucle ---------------------------------------------------------------
-let last = performance.now(), flyTimer = 3;
-function loop(now) {
-  const dt = Math.min(0.05, (now - last) / 1000);
-  last = now;
-
-  flyTimer -= dt;
-  if (flyTimer <= 0) {
-    if (flies.length < 2) spawnFly();
-    flyTimer = rand(6, 14);
-  }
-  flies.forEach(f => updateFly(f, dt));
-
-  if (!frog.act) nextAction();
-  frog.act.t += dt;
-  if (frog.act.run(frog.act.t, dt)) nextAction();
-
-  for (let i = flies.length - 1; i >= 0; i--) if (flies[i].dead) flies.splice(i, 1);
-
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, W, H);
-  // moscas detrás o delante según profundidad
-  flies.filter(f => f.y < frog.y && !f.caught).forEach(f => drawFly(f, now));
-  drawFrog();
-  flies.filter(f => f.y >= frog.y || f.caught).forEach(f => drawFly(f, now));
-
-  requestAnimationFrame(loop);
-}
-
-// clic = soltar una mosca
-cv.addEventListener('pointerdown', e => spawnFly(e.clientX, e.clientY));
-
-sheet.onload = () => requestAnimationFrame(loop);
-</script>
+<div id="info" class="hud"><div><div id="name"></div><div id="seed"></div></div></div>
+<div id="buttons" class="hud">
+  <button id="galleryBtn" class="px" title="Galeria (G)">▦ Galeria</button>
+  <button id="restart" class="px" title="Nova granota (R)">↻ Nova granota</button>
+</div>
+<div id="gallery" hidden>
+  <div class="bar">
+    <button id="more" class="px">↻ Més</button>
+    <button id="closeGal" class="px">✕</button>
+  </div>
+  <div class="grid"></div>
+</div>
+<script src="src/granota.js"></script>
+<script src="src/joc.js"></script>
 </body>
 </html>
