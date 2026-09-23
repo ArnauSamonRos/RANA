@@ -42,7 +42,7 @@ encara que el generador canviï.
     amb línia de parpella), amb vora de color (ranura fosca), ovalats (negres i brillants), de mitja lluna (bola negra amb mitja lluna daurada), vius (iris vermell fins
     al contorn, com la granota d'ulls vermells),
     endormiscats (parpella pesada), blancs amb pupil·la, contents (tancats en arc, amb o sense sòcol),
-    petits encastats o de punt. Pupil·la rodona, horitzontal, vertical, plena, brillant, en anella o de punt;
+    petits encastats (negres, amb mitja lluna daurada o vermells amb pupil·la) o de punt. Pupil·la rodona, horitzontal, vertical, plena, brillant, en anella o de punt;
     iris de diversos colors; parpella del color del cos, clara, rosada o de contrast; celles planes o
     enfadades (inclinades); banyes opcionals.
   - **Boca**: línia, somriure, trista, petita, de bigoti (diagonals cap avall), caiguda (ampla amb

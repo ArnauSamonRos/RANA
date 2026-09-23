@@ -30,7 +30,7 @@ const Aprenentatge = (() => {
   const PART_OF_PREFIX = {
     arch: 'cos', waist: 'cos', ratio: 'cos', size: 'cos', head: 'cos', taper: 'cos', horns: 'cos',
     pal: 'colors', col: 'colors', lum: 'colors', sat: 'colors', bcol: 'colors',
-    eye: 'ulls', esz: 'ulls', pup: 'ulls', iris: 'ulls', lid: 'ulls', angry: 'ulls', brow: 'ulls',
+    eye: 'ulls', bst: 'ulls', esz: 'ulls', pup: 'ulls', iris: 'ulls', lid: 'ulls', angry: 'ulls', brow: 'ulls',
     mouth: 'boca', nost: 'boca', cheeks: 'boca',
     belly: 'panxa', navel: 'panxa',
     arms: 'potes', thigh: 'potes', feet: 'potes', facc: 'potes',

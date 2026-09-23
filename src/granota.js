@@ -9,7 +9,7 @@ const Granota = (() => {
 
 // Versió del generador: s'apuja quan un mateix codi (llavor) passa a dibuixar
 // una granota diferent. Els vots guarden la versió i els trets per no perdre's.
-const VERSION = 6;
+const VERSION = 7;
 
 // ---------------------------------------------------------------- RNG ----
 function mulberry32(a) {
@@ -280,6 +280,9 @@ function genome(seed) {
   const erR = own ? A.er : ER[g.eyeType];
   g.er = Math.min(R.range(erR[0], erR[1]), g.bw * 0.3);
   if (g.eyeType === 'bead' || g.eyeType === 'dot') g.er = Math.min(g.er, 2.3);
+  // ulls petits encastats: negres, amb mitja lluna daurada o vermells amb pupil·la
+  g.beadStyle = g.eyeType === 'bead' ? R.weighted({ plain: 3, moon: 2, red: 1.5 }) : 'plain';
+  if (g.beadStyle !== 'plain') g.er = Math.max(g.er, R.range(2.2, 2.7));
   g.eyeSpread = g.eyeType === 'side' || g.eyeType === 'crescent' ? R.range(0.74, 0.86) : R.range(0.4, 0.62);
   const er = g.er;
   g.eyeDrop = {
@@ -407,6 +410,7 @@ function features(g) {
   if (g.bellyType !== 'none') add('bcol:' + colorWord(g.belly), 'panxa ' + colorWord(g.belly));
   add('belly:' + g.bellyType, { oval: 'panxa ovalada', big: 'panxa gran', chin: 'papada', ribbed: 'panxa estriada', none: 'sense panxa', bib: 'panxa de pitet', huge: 'panxa enorme' }[g.bellyType]);
   add('eye:' + g.eyeType, 'ulls ' + { bulge: 'sortints', toad: 'de gripau', white: 'blancs', bead: 'petits', dot: 'de punt', knob: 'sobre bonys', side: 'als costats', hooded: 'endormiscats', happy: 'contents', calm: 'tranquils', rim: 'amb vora de color', oval: 'ovalats', crescent: 'de mitja lluna', vivid: 'vius' }[g.eyeType]);
+  if (g.beadStyle !== 'plain') add('bst:' + g.beadStyle, g.beadStyle === 'moon' ? 'ulls petits amb mitja lluna' : 'ulls petits vermells');
   if (g.eyeType !== 'bead' && g.eyeType !== 'dot' && g.lidColor !== 'body') add('lid:' + g.lidColor, 'parpella ' + { light: 'clara', pink: 'rosada', accent: 'de contrast' }[g.lidColor]);
   if (g.angry) add('angry', 'ulls enfadats');
   const es = g.er / g.bw;
@@ -533,10 +537,18 @@ function render(g, poseName, lookX = 0, lookY = 0) {
   // Ulls: posició (dins l'amplada del cap i sense tocar-se)
   const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
   const er = g.er;
-  const eyeDX = clampN(bodyW * g.eyeSpread, er + 1.2, Math.max(er + 1.2, g.eyeType === 'side' ? bodyW - er * 0.4 : g.eyeType === 'crescent' ? bodyW - er * 0.3 : bodyW * 0.9 - er));
+  let eyeDX = clampN(bodyW * g.eyeSpread, er + 1.2, Math.max(er + 1.2, g.eyeType === 'side' ? bodyW - er * 0.4 : g.eyeType === 'crescent' ? bodyW - er * 0.3 : bodyW * 0.9 - er));
   const eyeY = top + g.eyeDrop + er * 0.3;
-  const eyes = [CX - eyeDX, CX + eyeDX];
   const small = g.eyeType === 'bead' || g.eyeType === 'dot';
+  if (small) {                                   // els ulls encastats queden sempre dins del cap
+    let half = 0;
+    for (const yy of [eyeY - er, eyeY, eyeY + er]) {
+      let hw = 0; while (hw < bodyW + 2 && bodyMask(CX + hw + 0.5, yy)) hw++;
+      half = half ? Math.min(half, hw) : hw;
+    }
+    eyeDX = Math.max(er + 1, Math.min(eyeDX, half - er - (g.beadStyle === 'moon' ? 2.2 : 1.4)));
+  }
+  const eyes = [CX - eyeDX, CX + eyeDX];
 
   // Boca: sota els ulls i sempre dins la meitat superior del cos
   let mouthY = Math.round(eyeY + (small ? er + 1.5 : er + 2.2) + g.mouthGap);
@@ -794,9 +806,20 @@ function render(g, poseName, lookX = 0, lookY = 0) {
     } else {
       // ulls petits encastats
       if (eyesState === 'closed') { for (let x = Math.floor(ex - er - 0.5); x < ex + er + 0.5; x++) dot(x, eyeY, g.outline); continue; }
-      const c = g.iris === g.body ? PC : (hexToHsl(g.iris)[2] > 0.5 ? PC : g.iris);
-      stamp(ellipse(ex, eyeY, er + 0.3, er + (eyesState === 'half' ? -0.4 : 0.3)), null, { color: c, outline: false, shade: false });
-      if (g.eyeType === 'bead') dot(ex - er * 0.5 + lx * 0.5, eyeY - er * 0.5, '#ffffff');
+      const d = Math.sign(ex - CX);
+      const rx = er + 0.3, ry = er + (eyesState === 'half' ? -0.4 : 0.3);
+      if (g.beadStyle === 'moon') {
+        // com l'ull de mitja lluna: parpella clara a sobre i mitja lluna daurada per dins i per sota
+        stamp((x, y) => ellipse(ex, eyeY, rx + 1, ry + 1)(x, y) && y < eyeY - ry * 0.55, null, { color: shift(g.body, 0, -0.05, 0.13), outline: false, shade: false });
+        stamp((x, y) => ellipse(ex, eyeY, rx + 1, ry + 1)(x, y) && y > eyeY - ry * 0.55 && ((x - ex) * d < rx * 0.35 || y > eyeY + ry * 0.5),
+          null, { color: g.moonColor, outline: false, shade: false });
+      }
+      const c = g.beadStyle === 'red' ? '#f0302c' : g.iris === g.body ? PC : (hexToHsl(g.iris)[2] > 0.5 ? PC : g.iris);
+      stamp(ellipse(ex, eyeY, rx, ry), null, { color: g.beadStyle === 'moon' ? '#07060a' : c, outline: g.beadStyle === 'red', shade: false });
+      if (g.beadStyle === 'red') {                 // com els ulls vius: iris vermell amb pupil·la vertical
+        for (let y = Math.floor(eyeY - ry * 0.6); y < eyeY + ry * 0.6; y++) dot(ex + lx * 0.5 - 0.5, y, PC);
+        dot(ex - rx * 0.5, eyeY - ry * 0.55, '#fff6f0');
+      } else if (g.eyeType === 'bead') dot(ex - er * 0.5 + lx * 0.5, eyeY - er * 0.5, '#ffffff');
     }
   }
   if (g.brow && !g.angry && socketed.includes(g.eyeType)) {
