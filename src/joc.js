@@ -21,7 +21,7 @@ resize();
 const rand = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-const bounds = () => ({ x0: 32 * S, x1: W - 32 * S, y0: 64 * S, y1: H - 6 * S });
+const bounds = () => ({ x0: 32 * S, x1: W - 32 * S, y0: 64 * S, y1: H - Math.max(6 * S, 110) });
 
 // ---- Mosques ---------------------------------------------------------------
 const flies = [];
@@ -356,16 +356,23 @@ const randomSeed = () => (Math.random() * 4294967296) >>> 0;
 function restart() { flies.forEach(f => { if (f.caught) f.dead = true; }); newFrog(Gust.next()); }
 
 // ---- M'agrada / No m'agrada ------------------------------------------------------
-function like() {
-  Gust.vote(frog.g.seed, 1);
-  if (Gust.voteOf(frog.g.seed) > 0) poof(frog.x, frog.y - 20 * S, 16, '240,110,140', 45);
+// Votar passa automàticament a la granota següent
+let voting = false;
+function vote(v) {
+  if (voting || galleryOpen) return;
+  voting = true;
+  Gust.vote(frog.g.seed, v);
+  if (Gust.voteOf(frog.g.seed) !== v) Gust.vote(frog.g.seed, v);   // si ja estava votada, no l'anul·lis
   updateVoteUI();
+  if (v > 0) poof(frog.x, frog.y - 20 * S, 16, '240,110,140', 45);
+  document.querySelectorAll('#votebar button').forEach(b => { b.disabled = true; });
+  setTimeout(() => {
+    restart();
+    voting = false;
+    document.querySelectorAll('#votebar button').forEach(b => { b.disabled = false; });
+  }, v > 0 ? 450 : 250);
 }
-function dislike() {
-  Gust.vote(frog.g.seed, -1);
-  updateVoteUI();
-  if (Gust.voteOf(frog.g.seed) < 0) setTimeout(restart, 250);
-}
+const like = () => vote(1), dislike = () => vote(-1);
 function updateVoteUI() {
   const v = Gust.voteOf(frog.g.seed);
   document.getElementById('like').classList.toggle('on', v > 0);

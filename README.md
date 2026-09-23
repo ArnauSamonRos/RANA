@@ -7,9 +7,9 @@ Obre `index.html` al navegador (no cal servidor).
 
 - **↻ Nova granota** (dalt a la dreta, o tecla `R`): reinicia amb una granota nova i diferent.
 - **▦ Galeria** (tecla `G`): mostra 30 granotes aleatòries; clica'n una per adoptar-la.
-- **👍 / 👎** (tecles `M` / `N`): vota la granota. Amb 👎 en surt una altra de seguida.
-  També es pot votar des de la galeria.
-- **"Què he après?"** (a baix a l'esquerra): mostra quins trets t'agraden i quins no, i permet oblidar-ho tot.
+- **👍 / 👎** (botons grans a baix al centre, o tecles `M` / `N`): vota la granota i passa
+  automàticament a la següent. També es pot votar des de la galeria.
+- **"Què he après?"** (a dalt a l'esquerra, sota el nom): mostra quins trets t'agraden i quins no, i permet oblidar-ho tot.
 - **Clic a la pantalla**: deixa anar una mosca.
 - La llavor de la granota queda a l'URL (`#xxxxxxxx`): compartint l'enllaç es veu la mateixa granota.
 
@@ -23,7 +23,7 @@ Obre `index.html` al navegador (no cal servidor).
   - **Cos**: amplada, alçada, forma del cap i del ventre (superel·lipse amb eixamplament inferior).
   - **Ulls**: sortints, de gripau (amb parpella), blancs amb pupil·la, petits encastats o punts;
     iris de diversos colors i pupil·la rodona, horitzontal, vertical o plena; celles i banyes opcionals.
-  - **Boca**: línia, somriure, trista, petita, oberta (granota toro) o sense; narius i galtes opcionals.
+  - **Boca**: línia, somriure, trista, petita o sense (mai oberta); narius i galtes opcionals.
   - **Panxa**: oval, gran, papada, estriada o sense.
   - **Potes**: braços prims, grossos, amb ventoses o amagats; cuixes grosses, normals, primes o amagades;
     peus amb dits, ventoses o palmats.

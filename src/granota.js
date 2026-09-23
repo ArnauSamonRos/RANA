@@ -166,7 +166,7 @@ const ARCH = {
     pal: ['toro', 'sàlvia', 'prat', 'oliva', 'pàl·lida', 'menta'],
     eye: { bulge: 4, toad: 1 }, er: [3, 4],
     iris: { '#dcc156': 3, '#e69b43': 1, '#0b0f1e': 2 }, pupil: { horiz: 3, round: 2 },
-    mouth: { line: 3, smile: 2, open: 1.2 }, belly: { big: 4, chin: 1 },
+    mouth: { line: 3, smile: 3 }, belly: { big: 4, chin: 1 },
     arms: { stubby: 3, thin: 1 }, thighs: { bulky: 3, normal: 2 }, feet: { webbed: 2, toes: 2 },
     pats: { none: 3, spots: 2, mottle: 1.5, speckle: 1 },
   },
