@@ -9,7 +9,7 @@ const Granota = (() => {
 
 // Versió del generador: s'apuja quan un mateix codi (llavor) passa a dibuixar
 // una granota diferent. Els vots guarden la versió i els trets per no perdre's.
-const VERSION = 5;
+const VERSION = 6;
 
 // ---------------------------------------------------------------- RNG ----
 function mulberry32(a) {
@@ -139,7 +139,7 @@ const ARCH = {
   arbre: {
     w: 3, bw: [9, 12], ratio: [0.95, 1.12], taper: [-0.05, 0.12],
     pal: ['arbre', 'prat', 'llima', 'blava', 'pàl·lida', 'menta', 'gel'],
-    eye: { bulge: 5, white: 1, side: 1.5, oval: 0.6, calm: 0.8 }, er: [3.2, 4.3],
+    eye: { bulge: 5, white: 1, side: 1.5, oval: 0.6, calm: 0.8, crescent: 0.6, vivid: 2.5 }, er: [3.2, 4.3],
     iris: { '#ff3033': 3, '#dcc156': 2, '#e69b43': 1, '#0b0f1e': 2 },
     pupil: { vert: 2, horiz: 2, shine: 1, round: 1, ring: 0.5 },
     mouth: { line: 3, smile: 3, droop: 2, chevron: 1 }, belly: { big: 3, oval: 2, bib: 3 },
@@ -150,7 +150,7 @@ const ARCH = {
   dard: {
     w: 2, bw: [9, 12], ratio: [0.9, 1.05], taper: [0, 0.18],
     pal: ['dart', 'carmí', 'blava', 'taronja', 'llima', 'arbre'],
-    eye: { bulge: 3, bead: 2, side: 1, oval: 3 }, er: [2.6, 3.5],
+    eye: { bulge: 3, bead: 2, side: 1, oval: 3, vivid: 0.5 }, er: [2.6, 3.5],
     iris: { '#0b0f1e': 5 }, pupil: { shine: 4, full: 1, round: 1 },
     mouth: { line: 2, frown: 1, small: 1, chevron: 3 }, belly: { none: 3, chin: 1, oval: 1 },
     arms: { thin: 3, pads: 1 }, thighs: { normal: 3, slim: 1 }, feet: { toes: 2, pads: 1, fingers: 3 },
@@ -160,7 +160,7 @@ const ARCH = {
   gripau: {
     w: 3, bw: [13, 17], ratio: [0.7, 0.85], taper: [0.15, 0.38],
     pal: ['gripau', 'sorra', 'fang', 'pedra', 'desert', 'avellana', 'oliva', 'banyuda'],
-    eye: { toad: 4, hooded: 2, knob: 1, bulge: 1, rim: 2.5 }, er: [2.6, 3.6],
+    eye: { toad: 4, hooded: 2, knob: 1, bulge: 1, rim: 2.5, crescent: 2.5 }, er: [2.6, 3.6],
     iris: { '#dcc156': 2, '#e69b43': 2, '#0b0f1e': 2, '#1a1208': 2 },
     pupil: { horiz: 4, ring: 1.5, round: 1, full: 1 },
     mouth: { line: 3, frown: 2, droop: 3 }, belly: { big: 3, oval: 2, ribbed: 0.6, huge: 2.5 },
@@ -170,7 +170,7 @@ const ARCH = {
   toro: {
     w: 2.5, bw: [14, 17], ratio: [0.75, 0.9], taper: [0.1, 0.28],
     pal: ['toro', 'sàlvia', 'prat', 'oliva', 'pàl·lida', 'menta'],
-    eye: { bulge: 3, knob: 3, toad: 1 }, er: [3, 4],
+    eye: { bulge: 3, knob: 3, toad: 1, crescent: 1.5 }, er: [3, 4],
     iris: { '#dcc156': 3, '#e69b43': 1, '#0b0f1e': 2 }, pupil: { horiz: 3, round: 2, dot: 2 },
     mouth: { line: 3, smile: 3, droop: 1.5 }, belly: { big: 4, chin: 1, huge: 1, bib: 1 },
     arms: { stubby: 3, thin: 1 }, thighs: { bulky: 3, normal: 2 }, feet: { webbed: 2, toes: 2 },
@@ -187,7 +187,7 @@ const ARCH = {
   banyuda: {
     w: 1.2, bw: [14, 17], ratio: [0.72, 0.85], taper: [0.2, 0.38], horns: 0.85, angry: 0.5,
     pal: ['banyuda', 'desert', 'sorra', 'gripau', 'prat', 'sàlvia'],
-    eye: { toad: 3, hooded: 2, happy: 1, bulge: 1, rim: 1.5 }, er: [2.6, 3.4],
+    eye: { toad: 3, hooded: 2, happy: 1, bulge: 1, rim: 1.5, crescent: 1 }, er: [2.6, 3.4],
     iris: { '#0b0f1e': 3, '#dcc156': 1 }, pupil: { horiz: 2, full: 2, ring: 1 },
     mouth: { frown: 3, line: 2, droop: 2 }, belly: { big: 4, huge: 2 },
     arms: { stubby: 3 }, thighs: { bulky: 3 }, feet: { toes: 2, webbed: 1 },
@@ -195,7 +195,7 @@ const ARCH = {
   },
   bassa: {
     w: 3, bw: [10, 15], ratio: [0.8, 1.0], taper: [0, 0.28], pal: ALL_PAL,
-    eye: { bulge: 3, toad: 1.2, white: 1, bead: 1, knob: 1, side: 1, happy: 0.7, hooded: 1, calm: 0.7, rim: 0.7, oval: 1 }, er: [2.8, 4],
+    eye: { bulge: 3, toad: 1.2, white: 1, bead: 1, knob: 1, side: 1, happy: 0.7, hooded: 1, calm: 0.7, rim: 0.7, oval: 1, crescent: 1, vivid: 0.6 }, er: [2.8, 4],
     iris: { '#0b0f1e': 3, '#dcc156': 2, '#e69b43': 1, '#c5a45d': 1, '#ff3033': 0.5 },
     pupil: { round: 2, horiz: 3, full: 1, ring: 1, shine: 1, dot: 0.5 },
     mouth: { line: 4, smile: 2, frown: 1, small: 0.6, chevron: 1, droop: 1 }, belly: { big: 3, oval: 3, chin: 1, none: 0.5, bib: 1, huge: 0.5 },
@@ -207,7 +207,7 @@ const ARCH = {
   cintura: {
     w: 2, bw: [10, 13], ratio: [1.0, 1.15], taper: [0.05, 0.2],
     pal: ['pàl·lida', 'prat', 'arbre', 'menta', 'sàlvia', 'llima', 'gel'],
-    eye: { calm: 3, bulge: 1.5, oval: 0.6 }, er: [3.2, 4.2],
+    eye: { calm: 3, bulge: 1.5, oval: 0.6, vivid: 0.6 }, er: [3.2, 4.2],
     iris: { '#0b0f1e': 2, '#dcc156': 1 }, pupil: { round: 1, vert: 1, shine: 1 },
     mouth: { chevron: 2.5, droop: 2, line: 1 }, belly: { bib: 4, big: 1 },
     arms: { long: 3, thin: 1 }, thighs: { normal: 2, slim: 1 }, feet: { fingers: 1.5, toes: 1, pads: 1 },
@@ -275,16 +275,16 @@ function genome(seed) {
   g.eyeType = part('eye');
   const ER = { bulge: [3, 4.2], toad: [2.6, 3.6], white: [3, 4.2], bead: [1.5, 2.3], dot: [1, 1.4],
     knob: [1.8, 2.6], side: [2.8, 3.8], hooded: [2.8, 3.8], happy: [2.4, 3.4],
-    calm: [3, 4.2], rim: [2.8, 3.8], oval: [2.8, 3.8] };
-  const own = A.eye[g.eyeType] && A.er && !['knob', 'happy', 'dot'].includes(g.eyeType);
+    calm: [3, 4.2], rim: [2.8, 3.8], oval: [2.8, 3.8], crescent: [2.6, 3.5], vivid: [3, 4] };
+  const own = A.eye[g.eyeType] && A.er && !['knob', 'happy', 'dot', 'crescent'].includes(g.eyeType);
   const erR = own ? A.er : ER[g.eyeType];
   g.er = Math.min(R.range(erR[0], erR[1]), g.bw * 0.3);
   if (g.eyeType === 'bead' || g.eyeType === 'dot') g.er = Math.min(g.er, 2.3);
-  g.eyeSpread = g.eyeType === 'side' ? R.range(0.74, 0.86) : R.range(0.4, 0.62);
+  g.eyeSpread = g.eyeType === 'side' || g.eyeType === 'crescent' ? R.range(0.74, 0.86) : R.range(0.4, 0.62);
   const er = g.er;
   g.eyeDrop = {
     bead: g.bh * R.range(0.18, 0.28), dot: g.bh * R.range(0.18, 0.28),
-    toad: R.range(-er * 0.2, er * 0.4), hooded: R.range(-er * 0.2, er * 0.3), rim: R.range(-er * 0.2, er * 0.3),
+    toad: R.range(-er * 0.2, er * 0.4), hooded: R.range(-er * 0.2, er * 0.3), rim: R.range(-er * 0.2, er * 0.3), crescent: R.range(er * 0.1, er * 0.5),
     knob: R.range(-er * 1.0, -er * 0.6), side: R.range(-er * 0.2, er * 0.3),
     happy: R.range(-er * 0.3, er * 0.5),
   }[g.eyeType] ?? R.range(-er * 0.5, er * 0.15);
@@ -296,9 +296,16 @@ function genome(seed) {
   // ulls tranquils: sòcol pàl·lid; ulls amb vora: anell de color al voltant d'una ranura fosca
   g.calmLid = g.belly !== g.body ? shift(g.belly, 0, -0.05, 0.02) : shift(g.body, 0, -0.1, 0.2);
   g.rimColor = hexToHsl(g.iris)[2] > 0.42 && hexToHsl(g.iris)[1] > 0.3 ? g.iris : R.pick(['#e39a4f', '#dcb050', '#e0784a']);
+  // ulls de mitja lluna: bola negra amb una mitja lluna daurada per dins i per sota
+  g.moonColor = R.pick(['#e0c040', '#e6b84a', '#d9c35a', '#e8a848']);
+  // ulls vius (granota d'ulls vermells): l'iris de color viu arriba fins al contorn, sense parpella
+  if (g.eyeType === 'vivid') {
+    g.iris = R.weighted({ '#f0302c': 5, '#ff5a24': 1.5, '#e8b020': 1, '#e84868': 0.7 });
+    g.pupil = R.weighted({ vert: 3, round: 1.5, horiz: 1 });
+  }
   g.happySocket = g.eyeType === 'happy' ? R.weighted({ none: 2, body: 2, white: 1.2 }) : 'none';
   // cella/parpella superior: plana (gripau), pesada (mig tancat) o enfadada (inclinada)
-  const flat = ['bulge', 'side', 'knob', 'white', 'toad', 'hooded'].includes(g.eyeType);
+  const flat = ['bulge', 'side', 'knob', 'white', 'toad', 'hooded', 'vivid'].includes(g.eyeType);  // la mitja lluna no porta cella
   g.angry = flat && g.eyeType !== 'white' && R.chance(A.angry || 0.1);
   g.brow = g.eyeType === 'toad' || g.eyeType === 'hooded' || g.angry || (g.eyeType === 'bulge' && R.chance(0.12));
   g.horns = R.chance(A.horns || 0.03) && !['bead', 'dot', 'calm'].includes(g.eyeType);
@@ -399,12 +406,12 @@ function features(g) {
   add('sat:' + (s < 0.3 ? 0 : s < 0.6 ? 1 : 2), 'color ' + (s < 0.3 ? 'apagat' : s < 0.6 ? 'suau' : 'viu'));
   if (g.bellyType !== 'none') add('bcol:' + colorWord(g.belly), 'panxa ' + colorWord(g.belly));
   add('belly:' + g.bellyType, { oval: 'panxa ovalada', big: 'panxa gran', chin: 'papada', ribbed: 'panxa estriada', none: 'sense panxa', bib: 'panxa de pitet', huge: 'panxa enorme' }[g.bellyType]);
-  add('eye:' + g.eyeType, 'ulls ' + { bulge: 'sortints', toad: 'de gripau', white: 'blancs', bead: 'petits', dot: 'de punt', knob: 'sobre bonys', side: 'als costats', hooded: 'endormiscats', happy: 'contents', calm: 'tranquils', rim: 'amb vora de color', oval: 'ovalats' }[g.eyeType]);
+  add('eye:' + g.eyeType, 'ulls ' + { bulge: 'sortints', toad: 'de gripau', white: 'blancs', bead: 'petits', dot: 'de punt', knob: 'sobre bonys', side: 'als costats', hooded: 'endormiscats', happy: 'contents', calm: 'tranquils', rim: 'amb vora de color', oval: 'ovalats', crescent: 'de mitja lluna', vivid: 'vius' }[g.eyeType]);
   if (g.eyeType !== 'bead' && g.eyeType !== 'dot' && g.lidColor !== 'body') add('lid:' + g.lidColor, 'parpella ' + { light: 'clara', pink: 'rosada', accent: 'de contrast' }[g.lidColor]);
   if (g.angry) add('angry', 'ulls enfadats');
   const es = g.er / g.bw;
   add('esz:' + (es < 0.2 ? 0 : es < 0.27 ? 1 : 2), 'ulls ' + (es < 0.2 ? 'petits' : es < 0.27 ? 'mitjans' : 'grans'));
-  if (!['happy', 'calm', 'rim', 'oval'].includes(g.eyeType)) add('pup:' + g.pupil, 'pupil·la ' + { round: 'rodona', horiz: 'horitzontal', vert: 'vertical', full: 'plena', shine: 'brillant', ring: 'amb anella', dot: 'de punt' }[g.pupil]);
+  if (!['happy', 'calm', 'rim', 'oval', 'crescent'].includes(g.eyeType)) add('pup:' + g.pupil, 'pupil·la ' + { round: 'rodona', horiz: 'horitzontal', vert: 'vertical', full: 'plena', shine: 'brillant', ring: 'amb anella', dot: 'de punt' }[g.pupil]);
   add('iris:' + colorWord(g.iris), 'iris ' + colorWord(g.iris));
   add('mouth:' + g.mouth, 'boca ' + { line: 'recta', smile: 'somrient', frown: 'trista', small: 'petita', open: 'oberta', none: 'invisible', chevron: 'de bigoti', droop: 'caiguda' }[g.mouth]);
   add('arms:' + g.arms, 'braços ' + { thin: 'prims', stubby: 'grossos', pads: 'amb ventoses', hidden: 'amagats', long: 'llargs' }[g.arms]);
@@ -526,7 +533,7 @@ function render(g, poseName, lookX = 0, lookY = 0) {
   // Ulls: posició (dins l'amplada del cap i sense tocar-se)
   const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
   const er = g.er;
-  const eyeDX = clampN(bodyW * g.eyeSpread, er + 1.2, Math.max(er + 1.2, g.eyeType === 'side' ? bodyW - er * 0.4 : bodyW * 0.9 - er));
+  const eyeDX = clampN(bodyW * g.eyeSpread, er + 1.2, Math.max(er + 1.2, g.eyeType === 'side' ? bodyW - er * 0.4 : g.eyeType === 'crescent' ? bodyW - er * 0.3 : bodyW * 0.9 - er));
   const eyeY = top + g.eyeDrop + er * 0.3;
   const eyes = [CX - eyeDX, CX + eyeDX];
   const small = g.eyeType === 'bead' || g.eyeType === 'dot';
@@ -680,11 +687,31 @@ function render(g, poseName, lookX = 0, lookY = 0) {
   // --- Ulls
   const eyesState = pose.eyes || 'open';
   const lx = Math.round(lookX), ly = Math.round(lookY);
-  const socketed = ['bulge', 'toad', 'white', 'knob', 'side', 'hooded', 'rim', 'oval'];
+  const socketed = ['bulge', 'toad', 'white', 'knob', 'side', 'hooded', 'rim', 'oval', 'vivid'];
   const PC = '#0a0a10';
   for (const ex of eyes) {
     const t = g.eyeType;
     const d = Math.sign(ex - CX);                     // -1 ull esquerre, 1 dret
+    if (t === 'crescent') {
+      // Ull de mitja lluna: parpella clara a sobre, bola negra que arriba a la vora
+      // del cap, mitja lluna daurada per la cara interna i per sota, i lluentor clara.
+      stamp(ellipse(ex - d * 0.4, eyeY - er * 0.75, er + 0.6, er * 0.75), null, { color: shift(g.body, 0, -0.05, 0.13), soft: false });
+      const rx = er, ry = er * 0.85;
+      const moon = (x, y) => ellipse(ex, eyeY, rx + 1, ry + 1)(x, y) && !ellipse(ex, eyeY, rx, ry)(x, y)
+        && y > eyeY - ry * 0.8 && ((x - ex) * d < rx * 0.35 || y > eyeY + ry * 0.55);
+      if (eyesState === 'closed') {
+        stamp(ellipse(ex, eyeY, rx + 1, ry + 1), null, { color: shift(g.body, 0, -0.05, 0.13), outline: false });
+        for (let x = Math.floor(ex - rx + 0.5); x < ex + rx - 0.5; x++) dot(x, eyeY + 0.5, g.outline);
+        continue;
+      }
+      stamp(moon, null, { color: g.moonColor, outline: false, shade: false });
+      stamp(ellipse(ex, eyeY, rx, ry), null, { color: '#07060a', outline: false, shade: false });
+      dot(ex - rx * 0.45, eyeY - ry * 0.25, g.belly !== g.body ? g.belly : '#f6dcae');
+      if (eyesState === 'half') for (let y = Math.floor(eyeY - ry - 1); y < eyeY; y++) for (let x = Math.floor(ex - rx - 1); x <= ex + rx + 1; x++) {
+        if (inb(x, y) && col[idx(x, y)] === '#07060a') { col[idx(x, y)] = shift(g.body, 0, -0.05, 0.13); lvl[idx(x, y)] = -1; }
+      }
+      continue;
+    }
     if (t === 'calm') {
       // ulls tranquils: sòcol pàl·lid amb la línia de la parpella que surt cap enfora
       stamp(ellipse(ex, eyeY, er + 1.3, er + 1.1), null, { color: g.calmLid, soft: false });
@@ -708,7 +735,7 @@ function render(g, poseName, lookX = 0, lookY = 0) {
     if (socketed.includes(t)) {
       // sòcol de l'ull (parpella), del color de la parpella
       const brx = t === 'oval' ? er * 0.8 : er, bry = t === 'oval' ? er * 1.15 : t === 'rim' ? er * 0.5 : er;
-      stamp(ellipse(ex, eyeY, brx + 1.3, Math.max(bry, er * 0.9) + 1.1), null, { color: t === 'rim' ? g.rimColor : g.lid, soft: false });
+      stamp(ellipse(ex, eyeY, brx + 1.3, Math.max(bry, er * 0.9) + 1.1), null, { color: t === 'rim' ? g.rimColor : t === 'vivid' ? g.iris : g.lid, soft: false });
       if (eyesState === 'closed') {
         stamp(ellipse(ex, eyeY, er, er * 0.9), null, { color: g.lid, outline: false });
         for (let x = Math.floor(ex - er + 0.5); x < ex + er - 0.5; x++) dot(x, eyeY + 0.5, g.outline);
@@ -743,7 +770,9 @@ function render(g, poseName, lookX = 0, lookY = 0) {
         const y = Math.floor(eyeY + er - 0.6);
         if (inb(x, y) && bIn[idx(x, y)] && col[idx(x, y)] === ball) lvl[idx(x, y)] = -1;
       }
-      if (hl) {
+      if (t === 'vivid') {                          // lluentor gran de 2 píxels
+        dot(ex - er * 0.45, eyeY - er * 0.55, '#fff6f0'); dot(ex - er * 0.45, eyeY - er * 0.55 + 1, '#fff6f0');
+      } else if (hl) {
         dot(ex - er * 0.45, eyeY - er * 0.45, '#ffffff');
         if (er > 3.4) dot(ex - er * 0.45 + 1, eyeY - er * 0.45, '#ffffff');
       }
