@@ -245,13 +245,15 @@ const Granota3D = (() => {
     const eyeY = SG - R.eyeY;
     for (const ex of R.eyes) {
       const X = ex - SCX, sgn = Math.sign(X) || 1;
-      const z = S.front(X, Math.min(eyeY, SG - R.top - 1)) - Rt * (flat ? 0.8 : small ? 0.45 : 0.5);
+      const z = S.front(X, Math.min(eyeY, SG - R.top - 1)) - Rt * (small ? 0.45 : 0.5);
       const e = ell('eye', [X, eyeY, z], [Rt, Rt, Rt]);
       e.ex = ex; e.cf = Math.cos(EYE_OUT * sgn); e.sf = Math.sin(-EYE_OUT * sgn);
       bodyParts.push(e);
       if (g.horns) bodyParts.push(cap('horn', [X - sgn * 0.5, SG - (R.eyeY - R.er - 0.5), z - 0.5], [X + sgn * R.er * 0.6, SG - (R.eyeY - R.er - 3.5), z - 1.5], 1.1));
     }
-    const inEye = (X, Y) => R.eyes.some(ex => Math.hypot(X - (ex - SCX), Y - eyeY) < Rt);
+    // zona de l'ull al dibuix (amb el seu contorn i les línies de parpella): a la cara
+    // hi va pell, perquè l'ull i el sòcol ja els porta l'esfera
+    const inEye = (X, Y) => R.eyes.some(ex => Math.hypot(X - (ex - SCX), Y - eyeY) < Rt + 1.5);
     // la boca continua pels costats del cap fins a sota l'ull
     const mouthY = SG - R.mouthY - 0.5, mouthBack = bodyParts[0].c[2] - Rt * 0.3;
     const mouthSide = p => g.mouth !== 'none' && g.mouth !== 'small' && Math.abs(p[1] - mouthY) < 0.5 && p[2] > mouthBack;
@@ -331,7 +333,7 @@ const Granota3D = (() => {
       }
     }
 
-    return { R, V, S, full, legHex, footHex, SKIN, LIMB, toWorld, toBody, dirWorld, dirBody, box, parts, bodyParts, socket, Rt, inEye, mouthSide, small };
+    return { R, V, S, full, legHex, footHex, SKIN, LIMB, toWorld, toBody, dirWorld, dirBody, box, parts, bodyParts, socket, Rt, inEye, mouthSide, small, flat };
   }
 
   const models = new WeakMap();
@@ -340,7 +342,7 @@ const Granota3D = (() => {
     if (!byPose) models.set(g, byPose = new Map());
     let M = byPose.get(poseName);
     if (!M) byPose.set(poseName, M = model(g, poseName));
-    const { R, V, S, full, legHex, footHex, SKIN, LIMB, toWorld, toBody, dirWorld, dirBody, box, parts, bodyParts, socket, Rt, inEye, mouthSide, small } = M;
+    const { R, V, S, full, legHex, footHex, SKIN, LIMB, toWorld, toBody, dirWorld, dirBody, box, parts, bodyParts, socket, Rt, inEye, mouthSide, small, flat } = M;
 
     // --- càmera
     const th = yaw * Math.PI / 4, cy = Math.cos(th), sy = Math.sin(th), cp = Math.cos(PITCH), sp = Math.sin(PITCH);
@@ -418,7 +420,7 @@ const Granota3D = (() => {
         const p = [oB[0] + dB[0] * best, oB[1] + dB[1] * best, oB[2] + dB[2] * best];
         const { n, isFront } = bodyNormal(p), l3 = levelOf(n), q = S.pix(p[0], p[1]);
         if (mouthSide(p)) { c = g.outline; l = 0; }
-        else if (isFront && inEye(p[0], p[1])) { c = socket; l = l3; }
+        else if (isFront && inEye(p[0], p[1])) { c = g.body; l = l3; }
         else if (isFront) {
           c = V.col[q];
           if (V.skin[q]) l = clamp(l3 + V.dl[q], -2, 1);
@@ -442,7 +444,7 @@ const Granota3D = (() => {
             if (sx >= 0 && syy >= 0 && sx < SW && syy < SH && V.mask[q] && !ring) {
               c = V.col[q]; l = V.skin[q] ? clamp(l3 + V.dl[q], -2, 1) : V.lv[q];
             } else { c = socket; l = l3; }
-          } else { c = small ? PC : socket; l = l3; }
+          } else { c = small ? PC : flat ? g.body : socket; l = l3; }
         }
       } else {                                            // potes, peus i braços
         const e = parts[bi - 100], l3 = levelOf(dirBody(bn));
