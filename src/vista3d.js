@@ -72,7 +72,7 @@ const Granota3D = (() => {
     // quina fracció del gruix de la fila hi ha a cada píxel (1 al mig, 0 a la vora).
     // (el que sobresurt per sobre del cap, els sòcols dels ulls, ja ho fan les esferes dels ulls)
     const vmask = new Uint8Array(N);
-    for (let k = 0; k < N; k++) vmask[k] = mask[k] && Math.floor(k / SW) + 0.5 >= R.top ? 1 : 0;
+    for (let k = 0; k < N; k++) vmask[k] = mask[k] && Math.floor(k / SW) + 0.5 >= R.headTop ? 1 : 0;
     const C = new Float32Array(N).fill(-0.3), segW = new Float32Array(SH);
     for (let y = 0; y < SH; y++) {
       let x = 0;

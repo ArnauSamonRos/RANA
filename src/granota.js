@@ -613,7 +613,16 @@ function render(g, poseName, lookX = 0, lookY = 0, opts = {}) {
   }
 
   // --- Cos + patrons
-  const bodyIn = stamp(bodyMask, null, { color: g.body, soft: true });
+  // Ulls a les cantonades: el front puja entre els ulls i s'hi uneix (un pont pla
+  // a prop del cim dels ulls, amb un petit graó al mig)
+  let headTop = top;
+  let bridge = () => false;
+  if (g.cornerEyes) {
+    const yb = eyeY - er * 0.6, mid = Math.max(1.5, eyeDX * 0.35);
+    headTop = Math.min(top, yb);
+    bridge = (x, y) => Math.abs(x - CX) <= eyeDX && y <= top + 3 && y >= yb + (Math.abs(x - CX) < mid ? 1 : 0);
+  }
+  const bodyIn = stamp((x, y) => bodyMask(x, y) || bridge(x, y), null, { color: g.body, soft: true });
   // Volum: costat dret i part baixa més foscos, franja de llum a dalt a l'esquerra
   for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
     const k = idx(x, y);
@@ -958,7 +967,7 @@ function render(g, poseName, lookX = 0, lookY = 0, opts = {}) {
     img.data[k * 4] = n >> 16 & 255; img.data[k * 4 + 1] = n >> 8 & 255; img.data[k * 4 + 2] = n & 255; img.data[k * 4 + 3] = 255;
   }
   cx.putImageData(img, 0, 0);
-  const raw = opts.raw ? { col, lvl, vol, volCol, eyes, eyeY, er, mouthY, shoulderY, bottom, top, bodyW, bodyH } : undefined;
+  const raw = opts.raw ? { col, lvl, vol, volCol, eyes, eyeY, er, mouthY, shoulderY, bottom, top, headTop, bodyW, bodyH } : undefined;
   return { canvas: cv, mouth: { x: CX, y: mouthY + 1 }, bodyW, top, cx: CX, g: G, raw };
 }
 
