@@ -43,6 +43,7 @@ encara que el generador canviï.
     al contorn, com la granota d'ulls vermells),
     endormiscats (parpella pesada), blancs amb pupil·la, contents (tancats en arc, amb o sense sòcol),
     petits encastats (negres, amb mitja lluna daurada o vermells amb pupil·la) o de punt. Pupil·la rodona, horitzontal, vertical, plena, brillant, en anella o de punt;
+    a vegades a les cantonades d'un cap pla, sobresortint per dalt i arran del costat (la cara s'uneix amb els ulls);
     iris de diversos colors; parpella del color del cos, clara, rosada o de contrast; celles planes o
     enfadades (inclinades); banyes opcionals.
   - **Boca**: línia, somriure, trista, petita, de bigoti (diagonals cap avall), caiguda (ampla amb

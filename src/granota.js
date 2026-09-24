@@ -9,7 +9,7 @@ const Granota = (() => {
 
 // Versió del generador: s'apuja quan un mateix codi (llavor) passa a dibuixar
 // una granota diferent. Els vots guarden la versió i els trets per no perdre's.
-const VERSION = 8;
+const VERSION = 9;
 
 // ---------------------------------------------------------------- RNG ----
 function mulberry32(a) {
@@ -389,6 +389,18 @@ function genome(seed) {
   g.reach = R.range(26, 44) * (0.8 + g.mass * 0.4);          // abast de la llengua (px lògics)
   g.curious = R.range(0.3, 1);
 
+  // Ulls a les cantonades: cap pla per dalt i ulls que en sobresurten, arran del
+  // costat del cap (la cara s'uneix amb els ulls). Sorteig a part perquè la resta
+  // de trets de cada llavor no canviï.
+  const R2 = makeRng((seed ^ 0x5bd1e995) >>> 0);
+  const cornerOk = ['bulge', 'white', 'vivid', 'oval', 'rim', 'toad', 'hooded', 'bead'].includes(g.eyeType) && !(g.eyeType === 'bead' && g.beadStyle === 'plain');
+  g.cornerEyes = cornerOk && R2.chance(0.3);
+  if (g.cornerEyes) {
+    g.pTop = Math.max(g.pTop, R2.range(2.9, 3.6));
+    g.eyeDrop = g.eyeType === 'bead' ? g.er * R2.range(0.3, 0.6) : -g.er * R2.range(0.15, 0.45);
+    g.horns = false;
+  }
+
   g.name = nameOf(g);
 
   // Escala de dibuix: granotes més grans (més píxels = més detall, com la referència).
@@ -447,6 +459,7 @@ function features(g) {
   add('ratio:' + (ratio < 0.8 ? 0 : ratio < 0.95 ? 1 : 2), 'cos ' + (ratio < 0.8 ? 'aplanat' : ratio < 0.95 ? 'equilibrat' : 'alt'));
   add('size:' + (g.mass < 0.3 ? 0 : g.mass < 0.65 ? 1 : 2), 'mida ' + (g.mass < 0.3 ? 'petita' : g.mass < 0.65 ? 'mitjana' : 'grossa'));
   add('head:' + (g.pTop < 2.2 ? 0 : 1), 'cap ' + (g.pTop < 2.2 ? 'rodó' : 'quadrat'));
+  if (g.cornerEyes) add('eyepos:corner', 'ulls a les cantonades del cap');
   add('taper:' + (g.taper > 0.22 ? 1 : 0), g.taper > 0.22 ? 'forma de pera' : 'forma recta');
   if (g.horns) add('horns', 'banyes');
   if (g.brow && !g.angry && g.eyeType !== 'toad' && g.eyeType !== 'hooded') add('brow', 'celles');
@@ -566,7 +579,7 @@ function render(g, poseName, lookX = 0, lookY = 0, opts = {}) {
   // Ulls: posició (dins l'amplada del cap i sense tocar-se)
   const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
   let er = g.er;
-  let eyeDX = clampN(bodyW * g.eyeSpread, er + 1.2, Math.max(er + 1.2, g.eyeType === 'side' ? bodyW - er * 0.4 : g.eyeType === 'crescent' ? bodyW - er * 0.3 : bodyW * 0.9 - er));
+  let eyeDX = g.cornerEyes ? bodyW : clampN(bodyW * g.eyeSpread, er + 1.2, Math.max(er + 1.2, g.eyeType === 'side' ? bodyW - er * 0.4 : g.eyeType === 'crescent' ? bodyW - er * 0.3 : bodyW * 0.9 - er));
   const eyeY = top + g.eyeDrop + er * 0.3;
   const small = g.eyeType === 'bead' || g.eyeType === 'dot';
   // Els ulls mai surten del cos pels costats: el sòcol ha de cabre dins l'amplada del cap
