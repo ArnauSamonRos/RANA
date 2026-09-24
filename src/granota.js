@@ -618,9 +618,13 @@ function render(g, poseName, lookX = 0, lookY = 0, opts = {}) {
   let headTop = top;
   let bridge = () => false;
   if (g.cornerEyes) {
+    // la silueta del cap inclou els ulls: pell al voltant de cada ull i un sol contorn
     const yb = eyeY - er * 0.6, mid = Math.max(1.5, eyeDX * 0.35);
-    headTop = Math.min(top, yb);
-    bridge = (x, y) => Math.abs(x - CX) <= eyeDX && y <= top + 3 && y >= yb + (Math.abs(x - CX) < mid ? 1 : 0);
+    const rx = er + 1.6, ry = er + 1.4;
+    headTop = Math.min(top, yb, eyeY - ry);
+    bridge = (x, y) => (Math.abs(x - CX) <= eyeDX && y <= top + 3 && y >= yb + (Math.abs(x - CX) < mid ? 1 : 0))
+      || eyes.some(ex => ((x - ex) / rx) ** 2 + ((y - eyeY) / ry) ** 2 <= 1)
+      || (Math.abs(x - CX) <= eyeDX + rx * 0.9 && y >= eyeY && y <= top + 3);        // costat del cap arran de l'ull
   }
   const bodyIn = stamp((x, y) => bodyMask(x, y) || bridge(x, y), null, { color: g.body, soft: true });
   // Volum: costat dret i part baixa més foscos, franja de llum a dalt a l'esquerra
@@ -833,7 +837,7 @@ function render(g, poseName, lookX = 0, lookY = 0, opts = {}) {
     if (socketed.includes(t)) {
       // sòcol de l'ull (parpella), del color de la parpella
       const brx = t === 'oval' ? er * 0.8 : er, bry = t === 'oval' ? er * 1.15 : t === 'rim' ? er * 0.5 : er;
-      stamp(ellipse(ex, eyeY, brx + 1.3, Math.max(bry, er * 0.9) + 1.1), null, { color: t === 'rim' ? g.rimColor : t === 'vivid' ? g.iris : g.lid, soft: false });
+      stamp(ellipse(ex, eyeY, brx + 1.3, Math.max(bry, er * 0.9) + 1.1), null, { color: t === 'rim' ? g.rimColor : t === 'vivid' ? g.iris : g.lid, soft: false, outline: !g.cornerEyes });
       if (eyesState === 'closed') {
         stamp(ellipse(ex, eyeY, er, er * 0.9), null, { color: g.lid, outline: false });
         for (let x = Math.floor(ex - er + 0.5); x < ex + er - 0.5; x++) dot(x, eyeY + 0.5, g.outline);
